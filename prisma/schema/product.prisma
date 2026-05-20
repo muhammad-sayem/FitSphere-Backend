@@ -1,5 +1,7 @@
 model Product {
-  id String @id @default(uuid())
-  name String
+  id          String @id @default(uuid())
+  name        String
   description String
+
+  @@map("products")
 }
