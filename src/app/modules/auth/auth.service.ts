@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import status from "http-status";
+import AppError from "../../errorHelpers/AppError";
 import { auth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
 import { ILoginUserPayload, IRegisterUserPayload } from "./auth.interface";
@@ -16,7 +19,7 @@ const registerUser = async (payload: IRegisterUserPayload) => {
   });
 
   if (!data.user) {
-    throw new Error("Failed to register user");
+    throw new AppError(status.BAD_REQUEST, "Failed to register user");
   }
 
   try {
@@ -32,8 +35,8 @@ const registerUser = async (payload: IRegisterUserPayload) => {
     return user;
   }
 
-  catch (error) {
-    console.error("Error creating user in database:", error);
+  catch (error: any) {
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Error creating user in database:", error.message);
   }
   
 }
