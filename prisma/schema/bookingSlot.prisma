@@ -1,0 +1,20 @@
+model BookingSlot {
+  id            String         @id @default(uuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainerId     String
+  trainer       TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  slotId        String
+  slot          Slot           @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  status        BookingStatus  @default(PENDING)
+  totalAmount   Float
+  paymentStatus Boolean        @default(false)
+  transactionId String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("booking_slots")
+  @@index([userId])
+  @@index([trainerId])
+  @@index([slotId])
+}

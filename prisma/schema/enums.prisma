@@ -8,3 +8,28 @@ enum UserStatus {
   ACTIVE
   BANNED
 }
+
+enum ProductCategories {
+  TRADEMILL
+  EXERCISE_BIKE
+  MASSAGER
+  DUMMBBELL
+  FLOOR_MAT
+  BENCHES
+  OTHER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}

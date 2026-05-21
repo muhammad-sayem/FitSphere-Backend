@@ -1,0 +1,11 @@
+model Slot {
+  id        String         @id @default(uuid())
+  trainerId String
+  trainer   TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  date      DateTime
+  startTime String
+  endTime   String
+  isBooked  Boolean        @default(false)
+
+  bookings BookingSlot[]
+}

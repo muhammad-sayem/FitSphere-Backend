@@ -4,7 +4,7 @@ model User {
   email         String
   emailVerified Boolean    @default(false)
   image         String?
-  role          UserRoles  
+  role          UserRoles
   status        UserStatus @default(ACTIVE)
   isDeleted     Boolean    @default(false)
   createdAt     DateTime   @default(now())
@@ -12,8 +12,13 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
+  trainerProfiles TrainerProfile[]
+  bookings        BookingSlot[]
+
   @@unique([email])
   @@map("users")
+  reviews Review[]
+  orders Order[]
 }
 
 model Session {
