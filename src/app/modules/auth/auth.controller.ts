@@ -3,6 +3,7 @@ import { AuthService } from "./auth.service";
 import { sendResponse } from "../../shared/sendResponse";
 import status from "http-status";
 import { catchAsync } from "../../shared/catchAsync";
+import { tokenUtils } from "../../utils/token";
 
 //* Register a new user *//
 const registerUser = catchAsync(
@@ -10,11 +11,22 @@ const registerUser = catchAsync(
     const payload = req.body;
     const result = await AuthService.registerUser(payload);
 
+    //* Setting tokens in the cookie *//
+    const { access_token, refresh_token, token, ...rest } = result;
+    tokenUtils.setAccessTokenCookie(res, access_token);
+    tokenUtils.setRefreshTokenCookie(res, refresh_token);
+    tokenUtils.setBetterAuthSessionTokenCookie(res, token as string);
+
     sendResponse(res, {
       httpStatusCode: status.CREATED,
       success: true,
       message: "User registered successfully",
-      data: result,
+      data: {
+        access_token,
+        refresh_token,        
+        token,
+        ...rest
+      },
     });
   }
 );
@@ -25,11 +37,23 @@ const loginUser = catchAsync(
     const payload = req.body;
     const result = await AuthService.loginUser(payload);
 
+    const { access_token, refresh_token, token, ...rest } = result;
+
+    //* Setting the access token, refresh token and better auth session token in the cookie *//
+    tokenUtils.setAccessTokenCookie(res, access_token);
+    tokenUtils.setRefreshTokenCookie(res, refresh_token);
+    tokenUtils.setBetterAuthSessionTokenCookie(res, token);
+
     sendResponse(res, {
       httpStatusCode: status.OK,
       success: true,
       message: "User logged in successfully",
-      data: result,
+      data: {
+        access_token,
+        refresh_token,
+        token,
+        ...rest
+      },
     });
   }
 );

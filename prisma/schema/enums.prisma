@@ -11,11 +11,11 @@ enum UserStatus {
 
 enum ProductCategories {
   TRADEMILL
-  EXERCISE_BIKE
   MASSAGER
   DUMMBBELL
-  FLOOR_MAT
   BENCHES
+  FLOOR_MAT
+  EXERCISE_BIKE
   OTHER
 }
 
