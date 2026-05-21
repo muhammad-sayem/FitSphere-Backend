@@ -1,0 +1,10 @@
+enum UserRoles {
+  USER
+  TRAINER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+}
