@@ -17,6 +17,4 @@ router.patch("/update-trainer-profile/:trainerProfileId", checkAuth(UserRoles.TR
 
 router.delete("/delete-trainer-profile/:trainerProfileId", checkAuth(UserRoles.ADMIN), TrainerProfileController.deleteTrainerProfile);
 
-
-
 export const TrainerProfileRoute = router;
