@@ -5,7 +5,8 @@ import z from "zod";
 import { envVars } from "../config/env";
 import AppError from "../errorHelpers/AppError";
 import { TErrorResponse, TErrorSources } from "../interfaces/error.interface";
-import { handleZodError } from "../errorHelpers/HandleZodError";
+import { handleZodError } from "../errorHelpers/handleZodError";
+
 
 
 
