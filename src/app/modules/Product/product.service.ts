@@ -1,9 +1,10 @@
 import status from "http-status";
-import { UserRoles } from "../../../generated/prisma/browser";
+import { Prisma, UserRoles } from "../../../generated/prisma/browser";
 import AppError from "../../errorHelpers/AppError";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
 import { ICreateProductPayload, IUpdateProductPayload } from "./product.interface";
+import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
 
 //* Create a new product *//
 const createProduct = async (payload: ICreateProductPayload) => {
@@ -14,9 +15,42 @@ const createProduct = async (payload: ICreateProductPayload) => {
 }
 
 //* Get all products *//
-const getAllProducts = async () => {
-  const result = await prisma.product.findMany({});
-  return result;
+const getAllProducts = async (query: QueryParams) => {
+  // For pagination //
+  const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
+
+  // For sorting //
+  const { orderBy } = QueryBuilder.getSortOptions(query);
+
+  // For searching //
+  const searchableFields = ["name", "description"];
+  const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.ProductWhereInput>(query, searchableFields);
+
+
+  const filterableFields = ["category", "remainingStock", "price"];
+  const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
+
+  const whereConditions = [
+    ...(searchConditions.length > 0 ? [{ OR: searchConditions }] : []),
+    { ...filterConditions }
+  ];
+
+  const products = await prisma.product.findMany({
+    where: whereConditions.length > 0 ? { AND: whereConditions } : undefined,
+    skip,
+    take: limit,
+    orderBy
+  });
+
+  return {
+    data: products,
+    meta: {
+      page,
+      limit,
+      total: products.length,
+      totalPages: Math.ceil(products.length / limit)
+    }
+  };
 }
 
 //* Get a product by prpoduct ID *// 

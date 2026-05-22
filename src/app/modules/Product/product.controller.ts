@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ProductService } from "./product.service";
 import { catchAsync } from "../../shared/catchAsync";
+import { QueryParams } from "../../utils/QueryBuilder";
 
 //* Create a new product *//
 const createProduct = catchAsync(
@@ -17,7 +18,8 @@ const createProduct = catchAsync(
 //* Get all products *//
 const getAllProducts = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await ProductService.getAllProducts();
+    const query = req.query;
+    const result = await ProductService.getAllProducts(query as QueryParams);
     res.status(200).json({
       success: true,
       message: "Products retrieved successfully",
