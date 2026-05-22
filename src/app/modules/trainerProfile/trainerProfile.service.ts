@@ -1,7 +1,7 @@
 import status from "http-status";
 import { IRequestUser } from "../../interfaces/requestUser.interface"
 import { prisma } from "../../lib/prisma"
-import { ICreateTrainerProfile } from "./trainerProfile.interface"
+import { ICreateTrainerProfile, IUpdateTrainerProfile } from "./trainerProfile.interface"
 import AppError from "../../errorHelpers/AppError";
 import { Prisma, UserRoles } from "../../../generated/prisma/browser";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
@@ -170,11 +170,60 @@ const approvalControlForTrainerProfile = async (user: IRequestUser, trainerProfi
 
     return result;
   }
+  
   catch (error) {
     console.log("Error updating trainer profile: ", error);
     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to update trainer profile", (error as Error).stack);
   }
 }
+
+//* Update a trainer profile by trainer profile ID (Own) *//
+const updateTrainerProfile = async (user: IRequestUser, trainerProfileId: string, payload: IUpdateTrainerProfile) => {
+  const isUserExists = await prisma.user.findUnique({
+    where: {
+      id: user.userId
+    }
+  });
+
+  if (!isUserExists) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  const isTrainerExists = await prisma.trainerProfile.findUnique({
+    where: {
+      id: trainerProfileId
+    }
+  });
+
+  if (!isTrainerExists) {
+    throw new AppError(status.NOT_FOUND, "Trainer profile not found");
+  }
+
+  const isValidTrainer = user.userId === isTrainerExists.userId;
+
+  if(!isValidTrainer) {
+    throw new AppError(status.FORBIDDEN, "Trainers can only update their own profiles");
+  }
+  
+  try{
+    const result = await prisma.trainerProfile.update({
+      where: {
+        id: trainerProfileId
+      },
+      data: {
+        ...payload,
+      }
+    });
+
+    return result;
+  }
+
+  catch (error) {
+    console.log("Error updating trainer profile: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to update trainer profile", (error as Error).stack);
+  }
+}
+
 
 //* Delete a trainer profile by trainer profile ID (Admin Only) *//
 const deleteTrainerProfile = async (user: IRequestUser, trainerProfileId: string) => {
@@ -226,5 +275,6 @@ export const TrainerProfileService = {
   getAllTrainerProfiles,
   getTrainerByTrainerProfileId,
   approvalControlForTrainerProfile,
+  updateTrainerProfile,
   deleteTrainerProfile
 }

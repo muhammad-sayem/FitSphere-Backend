@@ -69,6 +69,24 @@ const approvalControlForTrainerProfile = catchAsync(
   }
 );
 
+//* Update a trainer profile by trainer profile ID (Own) *//
+const updateTrainerProfile = catchAsync(
+  async (req: Request, res: Response) => {
+    const { trainerProfileId } = req.params;
+    const payload = req.body;
+    const user = req.user;
+
+    const result = await TrainerProfileService.updateTrainerProfile(user, trainerProfileId as string, payload);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Trainer profile updated successfully",
+      data: result
+    })
+  }
+);
+
 //* Delete a trainer profile by trainer profile ID (Admin Only) *//
 const deleteTrainerProfile = catchAsync(
   async (req: Request, res: Response) => {
@@ -91,5 +109,6 @@ export const TrainerProfileController = {
   getAllTrainerProfiles,
   getTrainerByTrainerProfileId,
   approvalControlForTrainerProfile,
+  updateTrainerProfile,
   deleteTrainerProfile
 }
