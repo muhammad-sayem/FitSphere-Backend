@@ -2,12 +2,15 @@ import { Request, Response } from "express";
 import { ProductService } from "./product.service";
 import { catchAsync } from "../../shared/catchAsync";
 import { QueryParams } from "../../utils/QueryBuilder";
+import { sendResponse } from "../../shared/sendResponse";
 
 //* Create a new product *//
 const createProduct = catchAsync(
   async (req: Request, res: Response) => {
     const result = await ProductService.createProduct(req.body);
-    res.status(201).json({
+    
+    sendResponse(res, {
+      httpStatusCode: 201,
       success: true,
       message: "Product created successfully",
       data: result
@@ -20,10 +23,13 @@ const getAllProducts = catchAsync(
   async (req: Request, res: Response) => {
     const query = req.query;
     const result = await ProductService.getAllProducts(query as QueryParams);
-    res.status(200).json({
-      success: true,
+
+    sendResponse(res, {
+      httpStatusCode: 200,
+      success: true, 
       message: "Products retrieved successfully",
-      data: result
+      data: result.data,
+      meta: result.meta
     });
   }
 );
@@ -35,8 +41,9 @@ const getProductById = catchAsync(
 
     const result = await ProductService.getProductById(productId as string);
 
-    res.status(200).json({
-      success: true,
+    sendResponse(res, {
+      httpStatusCode: 200,
+      success: true, 
       message: "Product retrieved successfully",
       data: result
     });
@@ -52,9 +59,10 @@ const updateProduct = catchAsync(
 
     const result = await ProductService.updateProduct(user, productId as string, payload);
 
-    res.status(200).json({
-      success: true,
-      message: "Product updated successfully",
+    sendResponse(res, {
+      httpStatusCode: 200,
+      success: true, 
+      message: "Product updated successfully", 
       data: result
     });
   }
@@ -68,7 +76,8 @@ const deleteProduct = catchAsync(
 
     const result = await ProductService.deleteProduct(user, productId as string);
 
-    res.status(200).json({
+    sendResponse(res, {
+      httpStatusCode: 200,
       success: true,
       message: "Product deleted successfully",
       data: result

@@ -168,14 +168,21 @@ const getSearchConditions = <TWhereInput>(query: QueryParams, searchableFields: 
     const searchTerm = query.searchTerm as string;
 
     searchableFields.forEach((field) => {
-      searchConditions.push(
-        {
-          [field]: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        } as TWhereInput
-      );
+      const leafFilter = {
+        contains: searchTerm,
+        mode: "insensitive",
+      };
+
+      if (isNestedFieldPath(field)) {
+        // convert 'user.name' into { user: { name: { contains: ... } } }
+        searchConditions.push(buildNestedFieldFilter(field, leafFilter) as TWhereInput);
+      } else {
+        searchConditions.push(
+          {
+            [field]: leafFilter,
+          } as TWhereInput
+        );
+      }
     });
   }
 
@@ -198,7 +205,7 @@ const getFilterConditions = (query: QueryParams, filterableFields: string[]) => 
           return;
         }
 
-        filterConditions[field] = directValue;
+        filterConditions[field] = toNumberIfNumeric(parseQueryValue(directValue));
         return;
       }
 
