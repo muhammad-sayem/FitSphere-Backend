@@ -58,9 +58,26 @@ const updateProduct = catchAsync(
   }
 );
 
+//* Delete a product by product ID (Admin Only)*//
+const deleteProduct = catchAsync(
+  async (req: Request, res: Response) => {
+    const { productId } = req.params;
+    const user = req.user;
+
+    const result = await ProductService.deleteProduct(user, productId as string);
+
+    res.status(200).json({
+      success: true,
+      message: "Product deleted successfully",
+      data: result
+    });
+  }
+);
+
 export const ProductController = {
   createProduct,
   getAllProducts,
   getProductById,
-  updateProduct
+  updateProduct,
+  deleteProduct
 }

@@ -6,7 +6,7 @@ import { prisma } from "../../lib/prisma";
 import { ICreateProductPayload, IUpdateProductPayload } from "./product.interface";
 
 //* Create a new product *//
-const createProduct = async (payload: ICreateProductPayload) =>  {
+const createProduct = async (payload: ICreateProductPayload) => {
   const result = await prisma.product.create({
     data: payload
   });
@@ -37,13 +37,13 @@ const updateProduct = async (user: IRequestUser, productId: string, payload: IUp
     }
   });
 
-  if(!isUserExists) {
+  if (!isUserExists) {
     throw new AppError(status.NOT_FOUND, "User not found");
   }
 
   const isAdmin = isUserExists.role === UserRoles.ADMIN;
 
-  if(!isAdmin) {
+  if (!isAdmin) {
     throw new AppError(status.FORBIDDEN, "Only admins can update products");
   }
 
@@ -63,9 +63,42 @@ const updateProduct = async (user: IRequestUser, productId: string, payload: IUp
   }
 };
 
+//* Delete a product by product ID (Admin Only)*//
+const deleteProduct = async (user: IRequestUser, productId: string) => {
+  const isUserExists = await prisma.user.findUnique({
+    where: {
+      id: user.userId
+    }
+  });
+
+  if (!isUserExists) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  if (isUserExists.role !== UserRoles.ADMIN) {
+    throw new AppError(status.FORBIDDEN, "Only admins can delete products");
+  }
+
+  try {
+    const result = await prisma.product.delete({
+      where: {
+        id: productId
+      }
+    });
+
+    return result;
+  }
+
+  catch (error) {
+    console.log("Error deleting product: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to delete product", (error as Error).stack);
+  }
+}
+
 export const ProductService = {
   createProduct,
   getAllProducts,
   getProductById,
-  updateProduct
+  updateProduct,
+  deleteProduct
 }
