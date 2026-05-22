@@ -9,4 +9,12 @@ router.post("/create-trainer-profile", checkAuth(UserRoles.TRAINER), TrainerProf
 
 router.get("/", TrainerProfileController.getAllTrainerProfiles);
 
+router.get("/:trainerProfileId", TrainerProfileController.getTrainerByTrainerProfileId);
+
+router.patch("/approval-control/:trainerProfileId", checkAuth(UserRoles.ADMIN), TrainerProfileController.approvalControlForTrainerProfile);
+
+router.delete("/delete-trainer-profile/:trainerProfileId", checkAuth(UserRoles.ADMIN), TrainerProfileController.deleteTrainerProfile);
+
+
+
 export const TrainerProfileRoute = router;

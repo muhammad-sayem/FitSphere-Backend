@@ -33,12 +33,63 @@ const getAllTrainerProfiles = catchAsync(
       message: "Trainer profiles retrieved successfully",
       data: result.data,
       meta: result.meta
-    }) 
+    })
   }
-)
+);
 
+//* Get a trainer profile by trainer profile ID *//
+const getTrainerByTrainerProfileId = catchAsync(
+  async (req: Request, res: Response) => {
+    const { trainerProfileId } = req.params;
+    const result = await TrainerProfileService.getTrainerByTrainerProfileId(trainerProfileId as string);
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Trainer profile retrieved successfully",
+      data: result
+    })
+  }
+);
+
+//* Approval contorl for a trainer profile (Admin Only)*//
+const approvalControlForTrainerProfile = catchAsync(
+  async (req: Request, res: Response) => {
+    const { trainerProfileId } = req.params;
+    const { isApproved } = req.body;
+    const user = req.user;
+
+    const result = await TrainerProfileService.approvalControlForTrainerProfile(user, trainerProfileId as string, isApproved as boolean);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: `Trainer profile ${isApproved ? "approved" : "rejected"} successfully`,
+      data: result
+    })
+  }
+);
+
+//* Delete a trainer profile by trainer profile ID (Admin Only) *//
+const deleteTrainerProfile = catchAsync(
+  async (req: Request, res: Response) => {
+    const { trainerProfileId } = req.params;
+    const user = req.user;
+
+    const result = await TrainerProfileService.deleteTrainerProfile(user, trainerProfileId as string);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Trainer profile deleted successfully",
+      data: result
+    })
+  }
+);
 
 export const TrainerProfileController = {
   createTrainerProfile,
-  getAllTrainerProfiles
+  getAllTrainerProfiles,
+  getTrainerByTrainerProfileId,
+  approvalControlForTrainerProfile,
+  deleteTrainerProfile
 }

@@ -34,7 +34,7 @@ const createTrainerProfile = async (user: IRequestUser, payload: ICreateTrainerP
     throw new AppError(status.CONFLICT, "Trainer profile already exists");
   }
 
-  try{
+  try {
     const result = await prisma.trainerProfile.create({
       data: {
         userId: user.userId,
@@ -73,6 +73,7 @@ const getAllTrainerProfiles = async (query: QueryParams) => {
   const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
 
   const whereConditions = [
+    { isApproved: true },
     ...(searchConditions.length > 0 ? [{ OR: searchConditions }] : []),
     { ...filterConditions }
   ];
@@ -110,7 +111,120 @@ const getAllTrainerProfiles = async (query: QueryParams) => {
   };
 }
 
+//* Get a trainer profile by trainer profile ID *// 
+const getTrainerByTrainerProfileId = async (trainerProfileId: string) => {
+  const result = await prisma.trainerProfile.findFirst({
+    where: {
+      id: trainerProfileId,
+      isApproved: true
+    },
+    include: {
+      user: true
+    }
+  });
+
+  if (!result) {
+    throw new AppError(status.NOT_FOUND, "Trainer profile not found");
+  }
+
+  return result;
+}
+
+//* Approval contorl for a trainer profile (Admin Only)*//
+const approvalControlForTrainerProfile = async (user: IRequestUser, trainerProfileId: string, isApproved: boolean) => {
+  const isUserExists = await prisma.user.findUnique({
+    where: {
+      id: user.userId
+    }
+  });
+
+  if (!isUserExists) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  const isTrainerExists = await prisma.trainerProfile.findUnique({
+    where: {
+      id: trainerProfileId
+    }
+  });
+
+  if (!isTrainerExists) {
+    throw new AppError(status.NOT_FOUND, "Trainer profile not found");
+  }
+
+  const isAdmin = user.role === UserRoles.ADMIN;
+
+  if (!isAdmin) {
+    throw new AppError(status.FORBIDDEN, "Only admins can approve or reject trainer profiles");
+  }
+
+  try {
+    const result = await prisma.trainerProfile.update({
+      where: {
+        id: trainerProfileId
+      },
+      data: {
+        isApproved
+      }
+    });
+
+    return result;
+  }
+  catch (error) {
+    console.log("Error updating trainer profile: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to update trainer profile", (error as Error).stack);
+  }
+}
+
+//* Delete a trainer profile by trainer profile ID (Admin Only) *//
+const deleteTrainerProfile = async (user: IRequestUser, trainerProfileId: string) => {
+  const isUserExists = await prisma.user.findUnique({
+    where: {
+      id: user.userId
+    }
+  });
+
+  if (!isUserExists) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  const isTrainerExists = await prisma.trainerProfile.findUnique({
+    where: {
+      id: trainerProfileId
+    }
+  });
+
+  if (!isTrainerExists) {
+    throw new AppError(status.NOT_FOUND, "Trainer profile not found");
+  }
+
+  const isAdmin = user.role === UserRoles.ADMIN;
+
+  if (!isAdmin) {
+    throw new AppError(status.FORBIDDEN, "Only admins can delete trainer profiles");
+  }
+
+  try {
+    const result = await prisma.trainerProfile.delete({
+      where: {
+        id: trainerProfileId
+      }
+    });
+
+    return result;
+  }
+  
+  catch (error) {
+    console.log("Error deleting trainer profile: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to delete trainer profile", (error as Error).stack);
+  }
+}
+
+
 export const TrainerProfileService = {
   createTrainerProfile,
-  getAllTrainerProfiles
+  getAllTrainerProfiles,
+  getTrainerByTrainerProfileId,
+  approvalControlForTrainerProfile,
+  deleteTrainerProfile
 }
