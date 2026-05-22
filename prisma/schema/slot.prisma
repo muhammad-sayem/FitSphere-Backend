@@ -8,4 +8,7 @@ model Slot {
   isBooked  Boolean        @default(false)
 
   bookings BookingSlot[]
+
+  @@map("slots")
+  @@index([trainerId])
 }

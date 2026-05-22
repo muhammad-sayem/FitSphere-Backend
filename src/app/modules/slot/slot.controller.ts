@@ -18,6 +18,54 @@ const createSlot = catchAsync(async (req: Request, res: Response) => {
   })
 });
 
+//* Get all slots *//
+const getAllSlots = catchAsync(
+  async (req: Request, res: Response) => { 
+    const result = await SlotService.getAllSlots(req.query);
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Slots retrieved successfully",
+      data: result
+    });
+  }
+);
+
+//* Get slot by slot ID *//
+const getSlotById = catchAsync(
+  async (req: Request, res: Response) => {
+    const { slotId } = req.params;
+
+    const result = await SlotService.getSlotById(slotId as string);
+    
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Slot retrieved successfully",
+      data: result
+    });
+  }
+);
+
+//* Get slots by trainer ID *//
+const getSlotsByTrainerId = catchAsync(
+  async (req: Request, res: Response) => { 
+    const { trainerId } = req.params;
+    const query = req.query;
+
+    const result = await SlotService.getSlotsByTrainerId(trainerId as string, query);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Slots retrieved successfully",
+      data: result.data,
+      meta: result.meta
+    }); 
+  }
+);
+
+
 //* Update slot by trainer (own) *//
 const updateSlot = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
@@ -36,5 +84,8 @@ const updateSlot = catchAsync(async (req: Request, res: Response) => {
 
 export const SlotController = {
   createSlot,
-  updateSlot
+  getAllSlots,
+  getSlotById,
+  getSlotsByTrainerId,
+  updateSlot,
 }
