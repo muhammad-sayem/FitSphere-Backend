@@ -2,7 +2,7 @@ import status from "http-status";
 import AppError from "../../errorHelpers/AppError";
 import { IRequestUser } from "../../interfaces/requestUser.interface"
 import { prisma } from "../../lib/prisma"
-import { ICreateReviewPayload } from "./review.interface"
+import { ICreateReviewPayload, IUpdateReviewPayload } from "./review.interface"
 
 //* Create a new review for a trainer (By user only) *//
 const createReview = async (user: IRequestUser, payload: ICreateReviewPayload) => {
@@ -77,6 +77,44 @@ const createReview = async (user: IRequestUser, payload: ICreateReviewPayload) =
 
 }
 
+//* Update review by user (own) *//
+const updateReview = async(user: IRequestUser, reviewId: string, payload: IUpdateReviewPayload) => {
+  const isReviewExists = await prisma.review.findFirst({
+    where: {
+      id: reviewId,
+    }
+  });
+
+  if (!isReviewExists) {
+    throw new AppError(status.NOT_FOUND, "Review not found");
+  }
+
+  const isOwnReview = await prisma.review.findFirst({
+    where: {
+      id: reviewId,
+      userId: user.userId
+    }
+  });
+
+  if (!isOwnReview) {
+    throw new AppError(status.FORBIDDEN, "You can't update others' reviews. You can only update your own reviews");
+  }
+
+  try {
+    const result = await prisma.review.update({
+      where: {
+        id: reviewId
+      },
+      data: payload
+    });
+    return result;
+  }
+  catch (error) {
+    console.log("Error updating review: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to update review");
+  }
+}
+
 //* Delete review by user (own) *//
 const deleteReview = async (user: IRequestUser, reviewId: string) => {
   const isReviewExists = await prisma.review.findFirst({
@@ -142,5 +180,6 @@ const deleteReview = async (user: IRequestUser, reviewId: string) => {
 
 export const TrainerReviewService = {
   createReview,
+  updateReview,
   deleteReview
 }

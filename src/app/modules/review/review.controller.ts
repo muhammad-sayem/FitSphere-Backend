@@ -22,6 +22,24 @@ const createReview = catchAsync(
   }
 );
 
+//* Update review by user (own) *//
+const updateReview = catchAsync(
+  async (req: Request, res: Response) => {
+    const user = req.user;
+    const reviewId = req.params.reviewId;
+    const payload = req.body;
+    
+    const result = await TrainerReviewService.updateReview(user, reviewId as string, payload);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Review updated successfully",
+      data: result
+    });
+  }
+);
+
 //* Delete review by user (own) *//
 const deleteReview = catchAsync(
   async (req: Request, res: Response) => {
@@ -42,5 +60,6 @@ const deleteReview = catchAsync(
 
 export const TrainerReviewController = {
   createReview,
-  deleteReview
+  deleteReview,
+  updateReview
 }
