@@ -77,6 +77,54 @@ const createReview = async (user: IRequestUser, payload: ICreateReviewPayload) =
 
 }
 
+//* Get reviews by userID *//
+const getReviewsByUserId = async (user: IRequestUser) => {
+  const isUserExists = await prisma.user.findUnique({
+    where: {
+      id: user.userId
+    }
+  });
+
+  if (!isUserExists) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  const result = await prisma.review.findMany({
+    where: {
+      userId: user.userId
+    } 
+  });
+
+  return result;
+}
+
+//* Get reviews by trainer ID *//
+const getReviewsByTrainerId = async (trainerId: string) => {
+  const isTrainerExists = await prisma.trainerProfile.findUnique({
+    where: {
+      id: trainerId
+    }
+  });
+
+  if (!isTrainerExists) {
+    throw new AppError(status.NOT_FOUND, "Trainer not found");
+  }
+
+  try {
+    const result = await prisma.review.findMany({
+      where: {
+        trainerId: trainerId
+      }
+    });
+    return result;
+  }
+
+  catch (error) {
+    console.log("Error fetching reviews by trainer ID: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch reviews");
+  }
+}
+
 //* Update review by user (own) *//
 const updateReview = async(user: IRequestUser, reviewId: string, payload: IUpdateReviewPayload) => {
   const isReviewExists = await prisma.review.findFirst({
@@ -178,8 +226,10 @@ const deleteReview = async (user: IRequestUser, reviewId: string) => {
 
 
 
-export const TrainerReviewService = {
+export const ReviewService = {
   createReview,
+  getReviewsByUserId,
+  getReviewsByTrainerId,
   updateReview,
   deleteReview
 }

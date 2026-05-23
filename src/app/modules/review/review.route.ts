@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { TrainerReviewController } from "./review.controller";
+import { ReviewController } from "./review.controller";
 import { CreateReviewZodSchema } from "./review.validation";
 import { validateRequest } from "../../middleware/validateRequest";
 import { checkAuth } from "../../middleware/checkAuth";
@@ -7,10 +7,14 @@ import { UserRoles } from "../../../generated/prisma/client";
 
 const router = Router();
 
-router.post("/create-review", validateRequest(CreateReviewZodSchema), checkAuth(UserRoles.USER), TrainerReviewController.createReview);
+router.post("/create-review", validateRequest(CreateReviewZodSchema), checkAuth(UserRoles.USER), ReviewController.createReview);
 
-router.patch("/update-review/:reviewId", validateRequest(CreateReviewZodSchema.partial()), checkAuth(UserRoles.USER), TrainerReviewController.updateReview);
+router.get("/user/my-reviews", checkAuth(UserRoles.USER),ReviewController.getReviewsByUserId);
 
-router.delete("/delete-review/:reviewId", checkAuth(UserRoles.USER), TrainerReviewController.deleteReview);
+router.get("/trainer/:trainerId/reviews", ReviewController.getReviewsByTrainerId);
+
+router.patch("/update-review/:reviewId", validateRequest(CreateReviewZodSchema.partial()), checkAuth(UserRoles.USER), ReviewController.updateReview);
+
+router.delete("/delete-review/:reviewId", checkAuth(UserRoles.USER), ReviewController.deleteReview);
 
 export const TrainerReviewRoute = router;

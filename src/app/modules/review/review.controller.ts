@@ -1,7 +1,7 @@
 import { Request, Response } from "express"
 import { catchAsync } from "../../shared/catchAsync"
 import { ICreateReviewPayload } from "./review.interface";
-import { TrainerReviewService } from "./review.service";
+import { ReviewService } from "./review.service";
 import { sendResponse } from "../../shared/sendResponse";
 import status from "http-status";
 
@@ -11,12 +11,44 @@ const createReview = catchAsync(
     const user = req.user;
     const payload = req.body;
 
-    const result = await TrainerReviewService.createReview(user, payload as ICreateReviewPayload);
+    const result = await ReviewService.createReview(user, payload as ICreateReviewPayload);
 
     sendResponse(res, {
       httpStatusCode: status.CREATED,
       success: true,
       message: "Review created successfully",
+      data: result
+    });
+  }
+);
+
+//* Get reviews by user ID (By user only) *//
+const getReviewsByUserId = catchAsync(
+  async (req: Request, res: Response) => {
+    const user = req.user;
+
+    const result = await ReviewService.getReviewsByUserId(user);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Reviews retrieved successfully",
+      data: result
+    });
+  }
+);
+
+//* Get reviews by trainer ID (Public) *//
+const getReviewsByTrainerId = catchAsync(
+  async (req: Request, res: Response) => {
+    const trainerId = req.params.trainerId;
+
+    const result = await ReviewService.getReviewsByTrainerId(trainerId as string);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Reviews retrieved successfully",
       data: result
     });
   }
@@ -28,8 +60,8 @@ const updateReview = catchAsync(
     const user = req.user;
     const reviewId = req.params.reviewId;
     const payload = req.body;
-    
-    const result = await TrainerReviewService.updateReview(user, reviewId as string, payload);
+
+    const result = await ReviewService.updateReview(user, reviewId as string, payload);
 
     sendResponse(res, {
       httpStatusCode: status.OK,
@@ -46,7 +78,7 @@ const deleteReview = catchAsync(
     const user = req.user;
     const reviewId = req.params.reviewId;
 
-    const result = await TrainerReviewService.deleteReview(user, reviewId as string);
+    const result = await ReviewService.deleteReview(user, reviewId as string);
 
     sendResponse(res, {
       httpStatusCode: status.OK,
@@ -58,8 +90,10 @@ const deleteReview = catchAsync(
 );
 
 
-export const TrainerReviewController = {
+export const ReviewController = {
   createReview,
+  getReviewsByUserId,
+  getReviewsByTrainerId,
   deleteReview,
   updateReview
 }
