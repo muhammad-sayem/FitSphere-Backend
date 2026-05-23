@@ -4,8 +4,11 @@ model Review {
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   trainerId String
   trainer   TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
-  rating    Int   
+  rating    Float
   comment   String?
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
+
+  @@map("reviews")
+  @@index([trainerId])
 }

@@ -12,7 +12,7 @@ model TrainerProfile {
   slots    Slot[]
   bookings BookingSlot[]
 
-  @@index([userId])
   @@map("trainer_profiles")
+  @@index([userId])
   reviews Review[]
 }

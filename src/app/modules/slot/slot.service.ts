@@ -350,6 +350,7 @@ const deleteSlot = async (user: IRequestUser, slotId: string) => {
   }
 }
 
+
 export const SlotService = {
   createSlot,
   getAllSlots,
