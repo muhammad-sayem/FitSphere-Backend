@@ -259,21 +259,16 @@ const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSl
     throw new AppError(status.FORBIDDEN, "Only trainers can update slots");
   }
 
-  const isTrainerValid = user.userId === isTrainer.userId;
-
-  if (!isTrainerValid) {
-    throw new AppError(status.FORBIDDEN, "You can only update your own slots");
-  }
-
-  const isSlotExists = await prisma.slot.findUnique({
+  const isSlotExists = await prisma.slot.findFirst({
     where: {
       id: slotId,
+      trainerId: isTrainer.id,
       isBooked: false
     }
   });
 
   if (!isSlotExists) {
-    throw new AppError(status.NOT_FOUND, "Slot not found");
+    throw new AppError(status.NOT_FOUND, "Slot not found or you are trying to update other trainer's slot");
   }
 
   const isSlotUnavailable = await prisma.slot.findFirst({
@@ -317,7 +312,43 @@ const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSl
   }
 }
 
+//* Delete slot by trainer (own) *//
+const deleteSlot = async (user: IRequestUser, slotId: string) => {
+  const isTrainer = await prisma.trainerProfile.findUnique({
+    where: {
+      userId: user.userId
+    }
+  });
 
+  if (!isTrainer) {
+    throw new AppError(status.FORBIDDEN, "Only trainers can delete slots");
+  }
+
+  const isSlotExists = await prisma.slot.findFirst({
+    where: {
+      id: slotId,
+      trainerId: isTrainer.id,
+      isBooked: false
+    }
+  });
+
+  if (!isSlotExists) {
+    throw new AppError(status.NOT_FOUND, "Slot not found or you are trying to delete other trainer's slot");
+  }
+
+  try {
+    await prisma.slot.delete({
+      where: {
+        id: slotId
+      }
+    });
+  }
+
+  catch (error) {
+    console.log("Error deleting slot: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to delete slot");
+  }
+}
 
 export const SlotService = {
   createSlot,
@@ -325,4 +356,5 @@ export const SlotService = {
   getSlotById,
   getSlotsByTrainerId,
   updateSlot,
+  deleteSlot
 }

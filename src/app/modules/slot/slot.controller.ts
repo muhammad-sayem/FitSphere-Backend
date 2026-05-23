@@ -81,6 +81,20 @@ const updateSlot = catchAsync(async (req: Request, res: Response) => {
   })
 });
 
+//* Delete slot by trainer (own) *//
+const deleteSlot = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user;
+  const { slotId } = req.params;
+
+  const result = await SlotService.deleteSlot(user, slotId as string);
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: "Slot deleted successfully",
+    data: result
+  })
+});
+
 
 export const SlotController = {
   createSlot,
@@ -88,4 +102,5 @@ export const SlotController = {
   getSlotById,
   getSlotsByTrainerId,
   updateSlot,
+  deleteSlot
 }

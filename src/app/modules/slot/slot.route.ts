@@ -17,4 +17,6 @@ router.get("/trainer/:trainerId", SlotController.getSlotsByTrainerId);
 
 router.patch('/update-slot/:slotId', validateRequest(updateSlotZodSchema), checkAuth(UserRoles.TRAINER), SlotController.updateSlot);
 
+router.delete('/delete-slot/:slotId', checkAuth(UserRoles.TRAINER), SlotController.deleteSlot);
+
 export const SlotRoute = router;
