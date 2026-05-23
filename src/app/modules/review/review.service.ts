@@ -3,6 +3,8 @@ import AppError from "../../errorHelpers/AppError";
 import { IRequestUser } from "../../interfaces/requestUser.interface"
 import { prisma } from "../../lib/prisma"
 import { ICreateReviewPayload, IUpdateReviewPayload } from "./review.interface"
+import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
+import { Prisma } from "../../../generated/prisma/client";
 
 //* Create a new review for a trainer (By user only) *//
 const createReview = async (user: IRequestUser, payload: ICreateReviewPayload) => {
@@ -77,6 +79,54 @@ const createReview = async (user: IRequestUser, payload: ICreateReviewPayload) =
 
 }
 
+//* Get all reviews *//
+const getAllReviews = async (query: QueryParams) => {
+  const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
+
+  const { orderBy } = QueryBuilder.getSortOptions(query);
+
+  const searchableFields = ["user.name", "trainer.user.name"];
+  const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.ReviewWhereInput>(query, searchableFields);
+
+  const filterableFields = ["rating", "trainer.avgRating", "trainer.experience"];
+  const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
+
+  const result = await prisma.review.findMany({
+    where: {
+      AND: [
+        { OR: searchConditions.length > 0 ? searchConditions : undefined },
+        { ...filterConditions }
+      ]
+    },
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true
+        }
+      },
+      trainer: {
+        include: {
+          user: true
+        }
+      }
+    },
+    skip,
+    take: limit,
+    orderBy
+  });
+
+  return {
+    data: result,
+    meta: {
+      page,
+      limit,
+      total: result.length,
+      totalPages: Math.ceil(result.length / limit)
+    }
+  };
+};
+
 //* Get reviews by userID *//
 const getReviewsByUserId = async (user: IRequestUser) => {
   const isUserExists = await prisma.user.findUnique({
@@ -92,7 +142,7 @@ const getReviewsByUserId = async (user: IRequestUser) => {
   const result = await prisma.review.findMany({
     where: {
       userId: user.userId
-    } 
+    }
   });
 
   return result;
@@ -126,7 +176,7 @@ const getReviewsByTrainerId = async (trainerId: string) => {
 }
 
 //* Update review by user (own) *//
-const updateReview = async(user: IRequestUser, reviewId: string, payload: IUpdateReviewPayload) => {
+const updateReview = async (user: IRequestUser, reviewId: string, payload: IUpdateReviewPayload) => {
   const isReviewExists = await prisma.review.findFirst({
     where: {
       id: reviewId,
@@ -186,7 +236,7 @@ const deleteReview = async (user: IRequestUser, reviewId: string) => {
     throw new AppError(status.FORBIDDEN, "You can't delete others' reviews. You can only delete your own reviews");
   }
 
-  try{
+  try {
     const result = await prisma.$transaction(async (tx) => {
       const deletedReview = await tx.review.delete({
         where: {
@@ -228,6 +278,7 @@ const deleteReview = async (user: IRequestUser, reviewId: string) => {
 
 export const ReviewService = {
   createReview,
+  getAllReviews,
   getReviewsByUserId,
   getReviewsByTrainerId,
   updateReview,

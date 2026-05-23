@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-assignment */
 export type QueryParams = {
-  searchTerm?: string;
+  searchTerm?: string | string[];
   page?: string;
   limit?: string;
   sortBy?: string;
@@ -146,9 +146,10 @@ const getSortOptions = (query: QueryParams) => {
 
   if (sortBy.includes(".")) {
     const [relation, field] = sortBy.split(".");
+    const normalizedRelation = relation === "tutor" ? "trainer" : relation;
 
     orderBy = {
-      [relation]: {
+      [normalizedRelation]: {
         [field]: sortOrder,
       },
     };
@@ -165,25 +166,30 @@ const getSearchConditions = <TWhereInput>(query: QueryParams, searchableFields: 
   const searchConditions: TWhereInput[] = [];
 
   if (query.searchTerm) {
-    const searchTerm = query.searchTerm as string;
+    const searchTerms = Array.isArray(query.searchTerm) ? query.searchTerm : [query.searchTerm];
 
-    searchableFields.forEach((field) => {
-      const leafFilter = {
-        contains: searchTerm,
-        mode: "insensitive",
-      };
+    searchTerms
+      .map((term) => (typeof term === "string" ? term.trim() : ""))
+      .filter(Boolean)
+      .forEach((searchTerm) => {
+        searchableFields.forEach((field) => {
+          const leafFilter = {
+            contains: searchTerm,
+            mode: "insensitive",
+          };
 
-      if (isNestedFieldPath(field)) {
-        // convert 'user.name' into { user: { name: { contains: ... } } }
-        searchConditions.push(buildNestedFieldFilter(field, leafFilter) as TWhereInput);
-      } else {
-        searchConditions.push(
-          {
-            [field]: leafFilter,
-          } as TWhereInput
-        );
-      }
-    });
+          if (isNestedFieldPath(field)) {
+            // convert 'user.name' into { user: { name: { contains: ... } } }
+            searchConditions.push(buildNestedFieldFilter(field, leafFilter) as TWhereInput);
+          } else {
+            searchConditions.push(
+              {
+                [field]: leafFilter,
+              } as TWhereInput
+            );
+          }
+        });
+      });
   }
 
   return { searchConditions };
@@ -211,7 +217,7 @@ const getFilterConditions = (query: QueryParams, filterableFields: string[]) => 
 
       if (Array.isArray(directValue)) {
         mergeDeep(filterConditions, buildNestedFieldFilter(field, {
-          in: directValue.map((item) => parseQueryValue(item)),
+          in: directValue.map((item) => toNumberIfNumeric(parseQueryValue(item))),
         }) as Record<string, unknown>);
 
         return;
@@ -222,7 +228,7 @@ const getFilterConditions = (query: QueryParams, filterableFields: string[]) => 
         return;
       }
 
-      mergeDeep(filterConditions, buildNestedFieldFilter(field, parseQueryValue(directValue)) as Record<string, unknown>);
+      mergeDeep(filterConditions, buildNestedFieldFilter(field, toNumberIfNumeric(parseQueryValue(directValue))) as Record<string, unknown>);
       return;
     }
 

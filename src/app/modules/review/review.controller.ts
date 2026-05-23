@@ -22,6 +22,22 @@ const createReview = catchAsync(
   }
 );
 
+//* Get all reviews *//
+const getAllReviews = catchAsync(
+  async (req: Request, res: Response) => {
+    const query = req.query;
+    
+    const result = await ReviewService.getAllReviews(query);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Reviews retrieved successfully",
+      data: result
+    });
+  }
+);
+
 //* Get reviews by user ID (By user only) *//
 const getReviewsByUserId = catchAsync(
   async (req: Request, res: Response) => {
@@ -92,6 +108,7 @@ const deleteReview = catchAsync(
 
 export const ReviewController = {
   createReview,
+  getAllReviews,
   getReviewsByUserId,
   getReviewsByTrainerId,
   deleteReview,

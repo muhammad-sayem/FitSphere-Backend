@@ -9,6 +9,8 @@ const router = Router();
 
 router.post("/create-review", validateRequest(CreateReviewZodSchema), checkAuth(UserRoles.USER), ReviewController.createReview);
 
+router.get("/", ReviewController.getAllReviews);
+
 router.get("/user/my-reviews", checkAuth(UserRoles.USER),ReviewController.getReviewsByUserId);
 
 router.get("/trainer/:trainerId/reviews", ReviewController.getReviewsByTrainerId);
