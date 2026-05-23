@@ -9,4 +9,6 @@ const router = Router();
 
 router.post("/create-review", validateRequest(CreateReviewZodSchema), checkAuth(UserRoles.USER), TrainerReviewController.createReview);
 
+router.delete("/delete-review/:reviewId", checkAuth(UserRoles.USER), TrainerReviewController.deleteReview);
+
 export const TrainerReviewRoute = router;
