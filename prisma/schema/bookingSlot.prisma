@@ -7,7 +7,7 @@ model BookingSlot {
   slotId        String
   slot          Slot           @relation(fields: [slotId], references: [id], onDelete: Cascade)
   status        BookingStatus  @default(PENDING)
-  totalAmount   Float
+  feeAmount     Float
   paymentStatus Boolean        @default(false)
   transactionId String?
   createdAt     DateTime       @default(now())

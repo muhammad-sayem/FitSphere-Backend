@@ -21,9 +21,7 @@ enum ProductCategories {
 
 enum BookingStatus {
   PENDING
-  CONFIRMED
   COMPLETED
-  CANCELLED
 }
 
 enum OrderStatus {
