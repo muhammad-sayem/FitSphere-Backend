@@ -2,6 +2,10 @@ model Order {
   id            String      @id @default(uuid())
   userId        String
   user          User        @relation(fields: [userId], references: [id])
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+  price         Float
+  quantity      Int
   totalAmount   Float
   status        OrderStatus @default(PENDING)
   address       String

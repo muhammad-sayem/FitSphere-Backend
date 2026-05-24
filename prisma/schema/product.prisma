@@ -12,4 +12,5 @@ model Product {
   orderItems      OrderItem[]
 
   @@map("products")
+  orders Order[]
 }
