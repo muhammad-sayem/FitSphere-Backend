@@ -4,10 +4,11 @@ import { checkAuth } from "../../middleware/checkAuth";
 import { UserRoles } from "../../../generated/prisma/enums";
 import { validateRequest } from "../../middleware/validateRequest";
 import { createProductZodSchema, updateProductZodSchema } from "./product.validation";
+import { multerUpload } from "../../config/multer.config";
 
 const router = Router();
 
-router.post('/create-product', validateRequest(createProductZodSchema), checkAuth(UserRoles.ADMIN), ProductController.createProduct);
+router.post('/create-product', checkAuth(UserRoles.ADMIN), multerUpload.single("file"), validateRequest(createProductZodSchema), ProductController.createProduct);
 
 router.get('/', ProductController.getAllProducts);
 

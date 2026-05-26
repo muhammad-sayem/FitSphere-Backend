@@ -7,7 +7,12 @@ import { sendResponse } from "../../shared/sendResponse";
 //* Create a new product *//
 const createProduct = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await ProductService.createProduct(req.body);
+    const payload = {
+      ...req.body,
+      image: req.file?.path
+    };
+
+    const result = await ProductService.createProduct(payload);
     
     sendResponse(res, {
       httpStatusCode: 201,

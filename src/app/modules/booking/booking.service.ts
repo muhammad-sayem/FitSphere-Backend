@@ -3,9 +3,14 @@ import AppError from "../../errorHelpers/AppError";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
 import { ICreateBookingPayload } from "./booking.interface";
-import { BookingStatus } from "../../../generated/prisma/enums";
+import { BookingStatus, PaymentPurpose, PaymentProvider, PaymentStatus } from "../../../generated/prisma/enums";
 import { Prisma } from "../../../generated/prisma/browser";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
+import { stripe } from "../../config/stripe.config";
+import { envVars } from "../../config/env";
+import {v7 as uuidv7} from "uuid";
+
+const paymentRedirectBaseUrl = process.env.FRONTEND_URL ?? envVars.BETTER_AUTH_URL;
 
 //* Create a new booking (By user only) *//
 const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload) => {
@@ -22,6 +27,13 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
   const isTrainerExists = await prisma.trainerProfile.findUnique({
     where: {
       id: payload.trainerId
+    },
+    include: {
+      user: {
+        select: {
+          name: true
+        }
+      }
     }
   });
 
@@ -46,12 +58,15 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      const transactionId = String(uuidv7());
+
       const booking = await tx.bookingSlot.create({
         data: {
           userId: user.userId,
           trainerId: payload.trainerId,
           slotId: payload.slotId,
-          feeAmount: isTrainerExists.feePerHour
+          feeAmount: isTrainerExists.feePerHour,
+          transactionId
         }
       });
 
@@ -64,7 +79,57 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
         }
       });
 
-      return booking;
+      const paymentData = await tx.payment.create({
+        data: {
+          userId: user.userId,
+          bookingSlotId: booking.id,
+          purpose: PaymentPurpose.TRAINER_BOOKING,
+          provider: PaymentProvider.STRIPE,
+          status: PaymentStatus.PENDING,
+          amount: isTrainerExists.feePerHour,
+        }
+      });
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "bdt",
+              product_data: {
+                name: `Booking with ${isTrainerExists.user?.name ?? "trainer"}`,
+              },
+              unit_amount: Math.round(isTrainerExists.feePerHour * 100),
+            },
+            quantity: 1,
+          }
+        ],
+        payment_intent_data: {
+          metadata: {
+            bookingSlotId: booking.id,
+            paymentId: paymentData.id,
+            purpose: PaymentPurpose.TRAINER_BOOKING,
+          }
+        },
+        metadata: {
+          bookingSlotId: booking.id,
+          paymentId: paymentData.id,
+          purpose: PaymentPurpose.TRAINER_BOOKING,
+        },
+        success_url: `${paymentRedirectBaseUrl}/dashboard/payment/payment-success`,
+        cancel_url: `${paymentRedirectBaseUrl}/dashboard/appointments`,
+      });
+
+      if (!session.url) {
+        throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create payment session");
+      }
+
+      return {
+        booking,
+        paymentData,
+        paymentUrl: session.url,
+      };
     });
 
     return result;
