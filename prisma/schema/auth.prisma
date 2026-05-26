@@ -14,11 +14,12 @@ model User {
 
   trainerProfiles TrainerProfile[]
   bookings        BookingSlot[]
+  payments        Payment[]
+  orders Order[]
+  reviews Review[]
 
   @@unique([email])
   @@map("users")
-  reviews Review[]
-  orders Order[]
 }
 
 model Session {

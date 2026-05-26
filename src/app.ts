@@ -8,6 +8,15 @@ const app: Application = express();
 // Enable URL-encoded form data parsing
 app.use(express.urlencoded({ extended: true }));
 
+// app.post("/webhook", express.raw({ type: "application/json" }), paymentController.handleStripeWebhookEvent)
+
+app.post("/webhook", express.raw({ type: "application/json" }), async(req: Request, res: Response) => {
+	console.log("Received webhook event:", req.body);
+	res.status(200).json({ received: true });
+})
+
+
+
 // Middleware to parse JSON bodies
 app.use(express.json());
 app.use(cookieParser());

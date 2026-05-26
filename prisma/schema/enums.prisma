@@ -31,3 +31,18 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
 }
+
+enum PaymentProvider {
+  STRIPE
+}
+
+enum PaymentPurpose {
+  TRAINER_BOOKING
+  PRODUCT_ORDER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}

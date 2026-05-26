@@ -1,0 +1,23 @@
+model Payment {
+  id                    String          @id @default(uuid())
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingSlotId         String?         @unique
+  bookingSlot           BookingSlot?    @relation(fields: [bookingSlotId], references: [id], onDelete: SetNull)
+  orderId               String?         @unique
+  order                 Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  provider              PaymentProvider @default(STRIPE)
+  purpose               PaymentPurpose
+  status                PaymentStatus   @default(PENDING)
+  amount                Float
+  stripeEventId         String?         @unique
+  paymentGatewayData    Json?
+  paidAt                DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([purpose])
+  @@index([provider])
+}
