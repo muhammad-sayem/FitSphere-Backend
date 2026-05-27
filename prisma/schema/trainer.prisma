@@ -1,13 +1,14 @@
 model TrainerProfile {
-  id          String  @id @default(uuid())
-  userId      String  @unique
-  user        User    @relation(fields: [userId], references: [id])
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
   bio         String?
   specialties String
   experience  Int
   feePerHour  Float
-  avgRating   Float   @default(0)
-  isApproved    Boolean @default(false)
+  avgRating   Float    @default(0)
+  isApproved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   slots    Slot[]
   bookings BookingSlot[]

@@ -6,6 +6,7 @@ model Slot {
   startTime String
   endTime   String
   isBooked  Boolean        @default(false)
+  createdAt DateTime       @default(now())
 
   bookings BookingSlot[]
 

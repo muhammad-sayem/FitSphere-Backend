@@ -4,8 +4,9 @@ import AppError from "../../errorHelpers/AppError";
 import { auth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
 import { ILoginUserPayload, IRegisterUserPayload } from "./auth.interface";
-import { UserStatus } from "../../../generated/prisma/browser";
+import { UserRoles, UserStatus } from "../../../generated/prisma/browser";
 import { tokenUtils } from "../../utils/token";
+import { IRequestUser } from "../../interfaces/requestUser.interface";
 
 //* Register a new user *//
 const registerUser = async (payload: IRegisterUserPayload) => {
@@ -107,7 +108,209 @@ const loginUser = async (payload: ILoginUserPayload) => {
   }
 }
 
+//* Get me *//
+const getMe = async (user: IRequestUser) => {
+  if (!user?.userId) {
+    throw new AppError(status.UNAUTHORIZED, "Unauthorized access");
+  }
+
+  const profile = await prisma.user.findUnique({
+    where: {
+      id: user.userId
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      role: true,
+      status: true,
+      isDeleted: true,
+      emailVerified: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
+
+  if (!profile) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  if (profile.role === UserRoles.USER) {
+    const [bookings, orders, reviews, payments] = await Promise.all([
+      prisma.bookingSlot.findMany({
+        where: {
+          userId: user.userId
+        },
+        orderBy: {
+          createdAt: "desc"
+        },
+        take: 5,
+        select: {
+          id: true,
+          trainerId: true,
+          slotId: true,
+          status: true,
+          paymentStatus: true,
+          feeAmount: true,
+          transactionId: true,
+          createdAt: true
+        }
+      }),
+      prisma.order.findMany({
+        where: { userId: user.userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          productId: true,
+          price: true,
+          quantity: true,
+          totalAmount: true,
+          status: true,
+          address: true,
+          phone: true,
+          transactionId: true,
+          createdAt: true
+        }
+      }),
+      prisma.review.findMany({
+        where: { userId: user.userId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.payment.findMany({
+        where: { userId: user.userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          purpose: true,
+          status: true,
+          amount: true,
+          provider: true,
+          paidAt: true,
+          createdAt: true
+        }
+      })
+    ]);
+
+    return {
+      profile,
+      roleData: {
+        bookings,
+        orders,
+        reviews,
+        payments
+      }
+    };
+  }
+
+  if (profile.role === UserRoles.TRAINER) {
+    const trainerProfile = await prisma.trainerProfile.findFirst({
+      where: {
+        userId: user.userId
+      },
+      select: {
+        id: true,
+        bio: true,
+        specialties: true,
+        experience: true,
+        feePerHour: true,
+        avgRating: true,
+        isApproved: true,
+        slots: {
+          orderBy: {
+            createdAt: "desc"
+          },
+          take: 5
+        },
+        bookings: {
+          orderBy: {
+            createdAt: "desc"
+          },
+          take: 5
+        },
+        reviews: {
+          orderBy: {
+            createdAt: "desc"
+          },
+          take: 5
+        }
+      }
+    });
+
+    return {
+      profile,
+      roleData: trainerProfile
+    };
+  }
+
+  const [userCount, trainerCount, bookingCount, orderCount, paymentCount, reviewCount] = await Promise.all([
+    prisma.user.count(),
+    prisma.trainerProfile.count(),
+    prisma.bookingSlot.count(),
+    prisma.order.count(),
+    prisma.payment.count(),
+    prisma.review.count()
+  ]);
+
+  // For admin: provide recent items for quick overview
+  const [recentUsers, recentTrainers, recentBookings, recentPayments] = await Promise.all([
+    prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    }),
+    prisma.trainerProfile.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        userId: true,
+        bio: true,
+        specialties: true,
+        isApproved: true,
+        avgRating: true,
+        createdAt: true,
+        user: { select: { id: true, name: true, email: true } }
+      }
+    }),
+    prisma.bookingSlot.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { id: true, userId: true, trainerId: true, slotId: true, status: true, paymentStatus: true, feeAmount: true, createdAt: true }
+    }),
+    prisma.payment.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { id: true, userId: true, amount: true, status: true, purpose: true, provider: true, paidAt: true, createdAt: true }
+    })
+  ]);
+
+  return {
+    profile,
+    roleData: {
+      summary: {
+        userCount,
+        trainerCount,
+        bookingCount,
+        orderCount,
+        paymentCount,
+        reviewCount
+      },
+      recent: {
+        users: recentUsers,
+        trainers: recentTrainers,
+        bookings: recentBookings,
+        payments: recentPayments
+      }
+    }
+  };
+}
+
 export const AuthService = {
   registerUser,
-  loginUser
+  loginUser,
+  getMe
 };
