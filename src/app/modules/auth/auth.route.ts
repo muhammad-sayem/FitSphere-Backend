@@ -2,10 +2,11 @@ import { Router } from "express";
 import { AuthControllers } from "./auth.controller";
 import { checkAuth } from "../../middleware/checkAuth";
 import { UserRoles } from "../../../generated/prisma/enums";
+import { multerUpload } from "../../config/multer.config";
 
 const router = Router();
 
-router.post("/register", AuthControllers.registerUser);
+router.post("/register", multerUpload.single("file"), AuthControllers.registerUser);
 
 router.post("/login", AuthControllers.loginUser);
 

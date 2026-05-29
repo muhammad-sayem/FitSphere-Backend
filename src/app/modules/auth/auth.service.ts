@@ -10,11 +10,12 @@ import { IRequestUser } from "../../interfaces/requestUser.interface";
 
 //* Register a new user *//
 const registerUser = async (payload: IRegisterUserPayload) => {
-  const { name, email, password, role } = payload;
+  const { name, image, email, password, role } = payload;
 
   const data = await auth.api.signUpEmail({
     body: {
       name,
+      image,
       email,
       password,
       role
@@ -86,6 +87,7 @@ const loginUser = async (payload: ILoginUserPayload) => {
   const access_token = tokenUtils.getAccessToken({
     userId: data.user.id,
     name: data.user.name,
+    image: data.user.image,
     email: data.user.email,
     role: data.user.role,
     status: data.user.status,
@@ -95,6 +97,7 @@ const loginUser = async (payload: ILoginUserPayload) => {
   const refresh_token = tokenUtils.getRefreshToken({
     userId: data.user.id,
     name: data.user.name,
+    image: data.user.image,
     email: data.user.email,
     role: data.user.role,
     status: data.user.status,

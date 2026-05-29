@@ -8,7 +8,12 @@ import { tokenUtils } from "../../utils/token";
 //* Register a new user *//
 const registerUser = catchAsync(
   async (req: Request, res: Response) => {
-    const payload = req.body;
+    const rawData = req.body.data;
+    const parsedData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+    const payload = {
+      ...parsedData,
+      image: req.file?.path
+    };
     const result = await AuthService.registerUser(payload);
 
     //* Setting tokens in the cookie *//
