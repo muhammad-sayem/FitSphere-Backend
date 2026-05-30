@@ -4,6 +4,7 @@ import { sendResponse } from "../../shared/sendResponse";
 import status from "http-status";
 import { catchAsync } from "../../shared/catchAsync";
 import { tokenUtils } from "../../utils/token";
+import { cookieUtils } from "../../utils/cookie";
 
 //* Register a new user *//
 const registerUser = catchAsync(
@@ -28,7 +29,7 @@ const registerUser = catchAsync(
       message: "User registered successfully",
       data: {
         access_token,
-        refresh_token,        
+        refresh_token,
         token,
         ...rest
       },
@@ -63,12 +64,46 @@ const loginUser = catchAsync(
   }
 );
 
+//* Logout user *//
+const logoutUser = catchAsync(
+  async (req: Request, res: Response) => {
+    const session_token = req.cookies['better-auth.session_token'];
+    const result = await AuthService.logoutUser(session_token);
+
+    cookieUtils.clearCookie(res, 'access_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none'
+    });
+
+    cookieUtils.clearCookie(res, 'refresh_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none'
+    });
+
+    cookieUtils.clearCookie(res, 'better-auth.session_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none'
+    });
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Logged out successfully!!",
+      data: result
+    });
+
+  }
+);
+
 //* Get Me *//
 const getMe = catchAsync(
   async (req: Request, res: Response) => {
     const user = req.user;
     const result = await AuthService.getMe(user);
-    
+
     sendResponse(res, {
       httpStatusCode: status.OK,
       success: true,
@@ -81,5 +116,6 @@ const getMe = catchAsync(
 export const AuthControllers = {
   registerUser,
   loginUser,
+  logoutUser,
   getMe
 };

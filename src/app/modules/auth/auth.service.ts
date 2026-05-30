@@ -111,6 +111,17 @@ const loginUser = async (payload: ILoginUserPayload) => {
   }
 }
 
+//* Logout user *//
+const logoutUser = async (session_token: string) => {
+  const result = await auth.api.signOut({
+    headers: new Headers({
+      Authorization: `Bearer ${session_token}`
+    })
+  });
+
+  return result;
+}
+
 //* Get me *//
 const getMe = async (user: IRequestUser) => {
   if (!user?.userId) {
@@ -315,5 +326,6 @@ const getMe = async (user: IRequestUser) => {
 export const AuthService = {
   registerUser,
   loginUser,
+  logoutUser,
   getMe
 };

@@ -10,6 +10,9 @@ router.post("/register", multerUpload.single("file"), AuthControllers.registerUs
 
 router.post("/login", AuthControllers.loginUser);
 
+router.post("/logout", AuthControllers.logoutUser);
+
 router.get("/me", checkAuth(UserRoles.USER, UserRoles.TRAINER, UserRoles.ADMIN), AuthControllers.getMe);
+
 
 export const AuthRoutes = router;
