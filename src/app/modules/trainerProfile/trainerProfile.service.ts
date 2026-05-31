@@ -111,6 +111,31 @@ const getAllTrainerProfiles = async (query: QueryParams) => {
   };
 }
 
+//* Get trainer profile by user ID *//
+const getTrainerProfileByUserId = async (userId: string) => {
+  const isUserExists = await prisma.user.findUnique({
+    where: {
+      id: userId
+    }
+  });
+
+  if (!isUserExists) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  const trainerProfile = await prisma.trainerProfile.findUnique({
+    where: {
+      userId: userId
+    }
+  });
+
+  if (!trainerProfile) {
+    throw new AppError(status.NOT_FOUND, "Trainer profile not found");
+  }
+
+  return trainerProfile;
+}
+
 //* Get a trainer profile by trainer profile ID *// 
 const getTrainerByTrainerProfileId = async (trainerProfileId: string) => {
   const result = await prisma.trainerProfile.findFirst({
@@ -274,6 +299,7 @@ export const TrainerProfileService = {
   createTrainerProfile,
   getAllTrainerProfiles,
   getTrainerByTrainerProfileId,
+  getTrainerProfileByUserId,
   approvalControlForTrainerProfile,
   updateTrainerProfile,
   deleteTrainerProfile

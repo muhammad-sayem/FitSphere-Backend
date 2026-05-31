@@ -37,6 +37,22 @@ const getAllTrainerProfiles = catchAsync(
   }
 );
 
+//* Get trainer profile by user ID *//
+const getTrainerProfileByUserId = catchAsync(
+  async (req: Request, res: Response) => {
+    const { userId } = req.params;
+
+    const result = await TrainerProfileService.getTrainerProfileByUserId(userId as string);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Trainer profile retrieved successfully",
+      data: result
+    })
+  }
+)
+
 //* Get a trainer profile by trainer profile ID *//
 const getTrainerByTrainerProfileId = catchAsync(
   async (req: Request, res: Response) => {
@@ -104,10 +120,12 @@ const deleteTrainerProfile = catchAsync(
   }
 );
 
+
 export const TrainerProfileController = {
   createTrainerProfile,
   getAllTrainerProfiles,
   getTrainerByTrainerProfileId,
+  getTrainerProfileByUserId,
   approvalControlForTrainerProfile,
   updateTrainerProfile,
   deleteTrainerProfile

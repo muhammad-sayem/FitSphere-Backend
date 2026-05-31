@@ -13,6 +13,8 @@ router.get("/", TrainerProfileController.getAllTrainerProfiles);
 
 router.get("/:trainerProfileId", TrainerProfileController.getTrainerByTrainerProfileId);
 
+router.get("/userId/:userId", checkAuth(UserRoles.USER, UserRoles.TRAINER), TrainerProfileController.getTrainerProfileByUserId);
+
 router.patch("/approval-control/:trainerProfileId", checkAuth(UserRoles.ADMIN), TrainerProfileController.approvalControlForTrainerProfile);
 
 router.patch("/update-trainer-profile/:trainerProfileId", checkAuth(UserRoles.TRAINER), TrainerProfileController.updateTrainerProfile);
