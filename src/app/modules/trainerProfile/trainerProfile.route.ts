@@ -2,10 +2,12 @@ import { Router } from "express";
 import { TrainerProfileController } from "./trainerProfile.controller";
 import { checkAuth } from "../../middleware/checkAuth";
 import { UserRoles } from "../../../generated/prisma/client";
+import { validateRequest } from "../../middleware/validateRequest";
+import { createTrainerProfileZodSchema } from "./trainerProfile.validation";
 
 const router = Router();
 
-router.post("/create-trainer-profile", checkAuth(UserRoles.TRAINER), TrainerProfileController.createTrainerProfile);
+router.post("/create-trainer-profile", validateRequest(createTrainerProfileZodSchema), checkAuth(UserRoles.TRAINER), TrainerProfileController.createTrainerProfile);
 
 router.get("/", TrainerProfileController.getAllTrainerProfiles);
 

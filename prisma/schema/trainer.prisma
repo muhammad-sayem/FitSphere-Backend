@@ -1,19 +1,19 @@
 model TrainerProfile {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
+  id          String        @id @default(uuid())
+  userId      String        @unique
+  user        User          @relation(fields: [userId], references: [id])
   bio         String?
   specialties String
   experience  Int
   feePerHour  Float
-  avgRating   Float    @default(0)
-  isApproved  Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  avgRating   Float         @default(0)
+  isApproved  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  
+  slots       Slot[]
+  bookings    BookingSlot[]
+  reviews     Review[]
 
-  slots    Slot[]
-  bookings BookingSlot[]
-
-  @@map("trainer_profiles")
   @@index([userId])
-  reviews Review[]
+  @@map("trainer_profiles")
 }
