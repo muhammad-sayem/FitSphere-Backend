@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import status from "http-status";
 import { catchAsync } from "../../shared/catchAsync";
 import { sendResponse } from "../../shared/sendResponse";
-import { handlerStripeWebhookEvent } from "./payment.service";
+import { handlerStripeWebhookEvent, PaymentService } from "./payment.service";
 
 const handleStripeWebhookEvent = catchAsync(async (req: Request, res: Response) => {
 	const rawBody = req.body;
@@ -25,6 +25,23 @@ const handleStripeWebhookEvent = catchAsync(async (req: Request, res: Response) 
 	});
 });
 
+
+//* Get Payment by user ID (Logged in user) *//
+const getPaymentByUserId = catchAsync(
+	async (req: Request, res: Response) => {
+		const user = req.user;
+
+		const result = await PaymentService.getPaymentByUserId(user);
+		sendResponse(res, {
+			httpStatusCode: status.OK,
+			success: true,
+			message: "Payments retrieved successfully",
+			data: result
+		})
+	}
+)
+
 export const PaymentController = {
-	handleStripeWebhookEvent
+	handleStripeWebhookEvent,
+	getPaymentByUserId
 };

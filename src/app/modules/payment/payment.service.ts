@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Stripe from "stripe";
 import status from "http-status";
 import AppError from "../../errorHelpers/AppError";
 import { prisma } from "../../lib/prisma";
 import { PaymentPurpose, PaymentProvider, PaymentStatus, OrderStatus } from "../../../generated/prisma/enums";
 import { Prisma } from "../../../generated/prisma/browser";
+import { IRequestUser } from "../../interfaces/requestUser.interface";
 
 type TStripeDataObject = {
   id: string;
@@ -217,3 +219,34 @@ export const handlerStripeWebhookEvent = async (event: Stripe.Event) => {
 
   return processProductOrderPayment(event, data, isSuccessfulEvent);
 };
+
+//* Get Payment by user ID (Logged in user) *//
+const getPaymentByUserId = async (user: IRequestUser) => {
+  const isUserExists = await prisma.user.findUnique({
+    where: {
+      id: user.userId
+    }
+  });
+
+  if (!isUserExists) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  try {
+    const payments = await prisma.payment.findMany({
+      where: {
+        userId: user.userId
+      },
+    });
+
+    return payments;
+  }
+
+  catch (error: any) {
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Error fetching payments", error.message);
+  }
+}
+
+export const PaymentService = {
+  getPaymentByUserId
+}

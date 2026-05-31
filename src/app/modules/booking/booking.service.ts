@@ -96,7 +96,7 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
         line_items: [
           {
             price_data: {
-              currency: "bdt",
+              currency: "usd",
               product_data: {
                 name: `Booking with ${isTrainerExists.user?.name ?? "trainer"}`,
               },
@@ -137,6 +137,15 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
 
   catch (error) {
     console.log("Error creating booking: ", error);
+
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    if (error instanceof Error) {
+      throw new AppError(status.INTERNAL_SERVER_ERROR, error.message);
+    }
+
     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create booking");
   }
 };

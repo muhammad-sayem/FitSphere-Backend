@@ -51,7 +51,7 @@ const getTrainerProfileByUserId = catchAsync(
       data: result
     })
   }
-)
+);
 
 //* Get a trainer profile by trainer profile ID *//
 const getTrainerByTrainerProfileId = catchAsync(

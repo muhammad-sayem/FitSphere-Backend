@@ -72,7 +72,7 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
         line_items: [
           {
             price_data: {
-              currency: "bdt",
+              currency: "usd",
               product_data: {
                 name: `Order for ${isProductExists.name}`,
               },
