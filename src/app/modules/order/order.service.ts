@@ -8,7 +8,7 @@ import { Prisma } from "../../../generated/prisma/browser";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
 import { stripe } from "../../config/stripe.config";
 import { envVars } from "../../config/env";
-import {v7 as uuidv7} from "uuid";
+import { v7 as uuidv7 } from "uuid";
 
 const paymentRedirectBaseUrl = process.env.FRONTEND_URL ?? envVars.BETTER_AUTH_URL;
 
@@ -41,12 +41,12 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
   const price = isProductExists.price;
   const totalAmount = price * payload.quantity;
 
-  try{
-    const result = await prisma.$transaction(async(tx) => {
+  try {
+    const result = await prisma.$transaction(async (tx) => {
       const transactionId = String(uuidv7());
 
       const order = await tx.order.create({
-        data :{
+        data: {
           userId: user.userId,
           price,
           totalAmount,
@@ -122,14 +122,48 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
     return result;
   }
 
-  catch(error){
+  catch (error) {
     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create order", (error as Error).stack);
   }
 
 }
 
 //* Get own orders (By user only) *//
-const getOwnOrders = async (user: IRequestUser) => {
+// const getOwnOrders = async (user: IRequestUser) => {
+//   const isUserExists = await prisma.user.findUnique({
+//     where: {
+//       id: user.userId
+//     }
+//   });
+
+//   if (!isUserExists) {
+//     throw new AppError(status.NOT_FOUND, "User not found");
+//   }
+
+//   try {
+//     const result = await prisma.order.findMany({
+//       where: {
+//         userId: user.userId
+//       },
+//       include: {
+//         product: {
+//           select: {
+//             name: true,
+//           }
+//         }
+//       }
+//     });
+
+//     return result;
+//   }
+
+//   catch (error) {
+//     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch orders", (error as Error).stack);
+//   }
+
+// };
+
+const getOwnOrders = async (user: IRequestUser, query: QueryParams) => {
   const isUserExists = await prisma.user.findUnique({
     where: {
       id: user.userId
@@ -140,16 +174,63 @@ const getOwnOrders = async (user: IRequestUser) => {
     throw new AppError(status.NOT_FOUND, "User not found");
   }
 
-  const result = await prisma.order.findMany({
-    where: {
-      userId: user.userId
-    }
-  });
+  try {
+    const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
 
-  return result;
+    const orderQuery = {
+      ...query,
+      sortBy: query.sortBy ?? "createdAt",
+    };
+    const { orderBy } = QueryBuilder.getSortOptions(orderQuery);
+
+    // Added "address" to searchableFields for partial and case-insensitive matching
+    const searchableFields = ["product.name", "product.description", "address"];
+    const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.OrderWhereInput>(query, searchableFields);
+
+    const filterableFields = ["status", "price", "totalAmount", "quantity"];
+    const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
+
+    const whereConditions = [
+      { userId: user.userId },
+      ...(searchConditions.length > 0 ? [{ OR: searchConditions }] : []),
+      { ...filterConditions }
+    ];
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where: { AND: whereConditions },
+        include: {
+          product: {
+            select: {
+              name: true,
+            }
+          }
+        },
+        skip,
+        take: limit,
+        orderBy
+      }),
+      prisma.order.count({
+        where: { AND: whereConditions },
+      })
+    ]);
+
+    return {
+      data: orders,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch orders", (error as Error).stack);
+  }
 };
 
-//* Get all orders (Admin only) *//
+
+//* Get all orders (By admin only) *//
 const getAllOrders = async (query: QueryParams) => {
   const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
 

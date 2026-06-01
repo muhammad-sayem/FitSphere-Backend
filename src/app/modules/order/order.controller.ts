@@ -27,8 +27,9 @@ const createOrder = catchAsync(
 const getOwnOrders = catchAsync(
   async (req: Request, res: Response) => {
     const user = req.user;
+    const query = req.query;
 
-    const result = await OrderService.getOwnOrders(user);
+    const result = await OrderService.getOwnOrders(user, query);
 
     sendResponse(res, {
       httpStatusCode: status.OK,
