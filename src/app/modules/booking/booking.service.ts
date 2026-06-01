@@ -220,24 +220,133 @@ const getAllBookings = async (query: QueryParams) => {
 };
 
 //* Get bookings by user ID (Own only) *//
-const getBookingsByUserId = async (user: IRequestUser) => {
+// const getBookingsByUserId = async (user: IRequestUser) => {
+//   const isUserExists = await prisma.user.findUnique({
+//     where: {
+//       id: user.userId
+//     }
+//   });
+
+//   if (!isUserExists) {
+//     throw new AppError(status.NOT_FOUND, "User not found");
+//   }
+
+//   const result = await prisma.bookingSlot.findMany({
+//     where: {
+//       userId: user.userId
+//     },
+//     include: {
+//       trainer: {
+//         select: {
+//           user: {
+//             select: {
+//               name: true,
+//               email: true,
+//               image: true
+//             }
+//           }
+//         }
+//       },
+//       slot: {
+//         select: {
+//           date: true,
+//           startTime: true,
+//           endTime: true
+//         }
+//       }
+//     }
+//   });
+
+//   return result;
+// };
+
+const getBookingsByUserId = async (user: IRequestUser, query: QueryParams) => {
+
   const isUserExists = await prisma.user.findUnique({
     where: {
-      id: user.userId
-    }
+      id: user.userId,
+    },
   });
 
   if (!isUserExists) {
     throw new AppError(status.NOT_FOUND, "User not found");
   }
 
-  const result = await prisma.bookingSlot.findMany({
-    where: {
-      userId: user.userId
-    }
-  });
+  const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
 
-  return result;
+  const bookingQuery = {
+    ...query,
+    sortBy: query.sortBy ?? "createdAt",
+  };
+  const { orderBy } = QueryBuilder.getSortOptions(bookingQuery);
+
+  const searchableFields = ["trainer.user.name", "trainer.user.email"];
+  const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.BookingSlotWhereInput>(
+    query,
+    searchableFields
+  );
+
+  const filterableFields = [
+    "paymentStatus",
+    "feeAmount",
+    "slot.date",
+    "slot.startTime",
+    "slot.endTime",
+  ];
+  const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
+
+  const whereConditions: Prisma.BookingSlotWhereInput[] = [
+    { userId: user.userId }, // Scoping query results to this user only
+    ...(searchConditions.length > 0 ? [{ OR: searchConditions }] : []),
+    { ...filterConditions },
+  ];
+
+  try {
+    const [bookings, total] = await Promise.all([
+      prisma.bookingSlot.findMany({
+        where: { AND: whereConditions },
+        include: {
+          trainer: {
+            select: {
+              user: {
+                select: {
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+          slot: {
+            select: {
+              date: true,
+              startTime: true,
+              endTime: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy,
+      }),
+      prisma.bookingSlot.count({
+        where: { AND: whereConditions },
+      }),
+    ]);
+
+    return {
+      data: bookings,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    console.log("Error fetching user bookings: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch bookings");
+  }
 };
 
 //* Get bookings by trainer ID (Public) *//

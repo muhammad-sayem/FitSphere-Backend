@@ -42,14 +42,16 @@ const getAllBookings = catchAsync(
 const getBookingsByUserId = catchAsync(
   async (req: Request, res: Response) => {
     const user = req.user;
+    const query = req.query;
 
-    const result = await BookingService.getBookingsByUserId(user);
+    const result = await BookingService.getBookingsByUserId(user, query);
 
     sendResponse(res, {
       httpStatusCode: status.OK,
       success: true,
       message: "Bookings retrieved successfully",
-      data: result
+      data: result.data,
+      meta: result.meta
     });
   }
 );
