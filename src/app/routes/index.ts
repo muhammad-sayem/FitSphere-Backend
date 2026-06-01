@@ -8,6 +8,7 @@ import { BookingRoute } from "../modules/booking/booking.route";
 import { OrderRoute } from "../modules/order/order.route";
 import { UserRoute } from "../modules/user/user.route";
 import { PaymentRoute } from "../modules/payment/payment.route";
+import { StatsRoute } from "../modules/stats/stats.route";
 
 
 const router = Router();
@@ -21,5 +22,6 @@ router.use('/bookings', BookingRoute);
 router.use('/orders', OrderRoute);
 router.use('/users', UserRoute);
 router.use('/payments', PaymentRoute);
+router.use('/stats', StatsRoute);
 
 export const IndexRouters = router;

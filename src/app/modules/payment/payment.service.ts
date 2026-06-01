@@ -222,6 +222,9 @@ export const handlerStripeWebhookEvent = async (event: Stripe.Event) => {
 
 //* Get Payment by user ID (Logged in user) *//
 const getPaymentByUserId = async (user: IRequestUser) => {
+  if (!user || !user.userId) {
+    return []; // অথবা throw new AppError(status.UNAUTHORIZED, "Unauthorized");
+  }
   const isUserExists = await prisma.user.findUnique({
     where: {
       id: user.userId

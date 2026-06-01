@@ -9,7 +9,7 @@ const router = Router();
 
 router.post("/create-order", validateRequest(createOrderZodSchema), checkAuth(UserRoles.USER, UserRoles.TRAINER), OrderController.createOrder);
 
-router.get("/user/my-orders", checkAuth(UserRoles.USER), OrderController.getOwnOrders);
+router.get("/user/my-orders", checkAuth(UserRoles.USER, UserRoles.TRAINER), OrderController.getOwnOrders);
 
 router.get("/", checkAuth(UserRoles.ADMIN), OrderController.getAllOrders);
 

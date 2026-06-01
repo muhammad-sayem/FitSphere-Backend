@@ -39,7 +39,7 @@ const getPaymentByUserId = catchAsync(
 			data: result
 		})
 	}
-)
+);
 
 export const PaymentController = {
 	handleStripeWebhookEvent,

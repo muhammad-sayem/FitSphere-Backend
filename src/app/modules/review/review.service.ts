@@ -139,13 +139,20 @@ const getReviewsByUserId = async (user: IRequestUser) => {
     throw new AppError(status.NOT_FOUND, "User not found");
   }
 
-  const result = await prisma.review.findMany({
-    where: {
-      userId: user.userId
-    }
-  });
+  try {
+    const result = await prisma.review.findMany({
+      where: {
+        userId: user.userId
+      }
+    });
 
-  return result;
+    return result;
+  }
+
+  catch (error) {
+    console.log("Error fetching reviews by user ID: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch reviews");
+  }
 }
 
 //* Get reviews by trainer ID *//
