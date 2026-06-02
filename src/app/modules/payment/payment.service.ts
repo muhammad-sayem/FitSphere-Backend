@@ -6,6 +6,7 @@ import { prisma } from "../../lib/prisma";
 import { PaymentPurpose, PaymentProvider, PaymentStatus, OrderStatus } from "../../../generated/prisma/enums";
 import { Prisma } from "../../../generated/prisma/browser";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
+import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
 
 type TStripeDataObject = {
   id: string;
@@ -221,34 +222,177 @@ export const handlerStripeWebhookEvent = async (event: Stripe.Event) => {
 };
 
 //* Get Payment by user ID (Logged in user) *//
-const getPaymentByUserId = async (user: IRequestUser) => {
+// const getPaymentByUserId = async (user: IRequestUser) => {
+//   if (!user || !user.userId) {
+//     return [];
+//   }
+//   const isUserExists = await prisma.user.findUnique({
+//     where: {
+//       id: user.userId
+//     }
+//   });
+
+//   if (!isUserExists) {
+//     throw new AppError(status.NOT_FOUND, "User not found");
+//   }
+
+//   try {
+//     const payments = await prisma.payment.findMany({
+//       where: {
+//         userId: user.userId
+//       },
+//       include: {
+//         order: {
+//           include: {
+//             product: {
+//               select: {
+//                 name: true,
+//               }
+//             }
+//           }
+//         },
+//         bookingSlot: {
+//           include: {
+//             user: {
+//               select: {
+//                 name: true,
+//               }
+//             },
+//             trainer: {
+//               include: {
+//                 user: {
+//                   select: {
+//                     name: true,
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       }
+//     });
+
+//     return payments;
+//   }
+
+//   catch (error: any) {
+//     throw new AppError(status.INTERNAL_SERVER_ERROR, "Error fetching payments", error.message);
+//   }
+// }
+
+const getPaymentByUserId = async (
+  user: IRequestUser,
+  query: QueryParams
+) => {
   if (!user || !user.userId) {
-    return []; // অথবা throw new AppError(status.UNAUTHORIZED, "Unauthorized");
+    return {
+      meta: {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+      },
+      data: [],
+    };
   }
+
   const isUserExists = await prisma.user.findUnique({
     where: {
-      id: user.userId
-    }
+      id: user.userId,
+    },
   });
 
   if (!isUserExists) {
     throw new AppError(status.NOT_FOUND, "User not found");
   }
 
-  try {
-    const payments = await prisma.payment.findMany({
-      where: {
-        userId: user.userId
-      },
-    });
+  const searchableFields = [
+    "order.product.name",
+    "bookingSlot.trainer.user.name"
+  ];
+  const filterableFields = [
+    "purpose",
+    "status",
+    "bookingSlot.status",
+    "order.status"
+  ];
 
-    return payments;
+  const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
+  const { orderBy } = QueryBuilder.getSortOptions(query);
+  const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.PaymentWhereInput>(query, searchableFields);
+  const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
+
+  const baseConditions: Prisma.PaymentWhereInput = {
+    userId: user.userId,
+  };
+
+  const andConditions: Prisma.PaymentWhereInput[] = [baseConditions];
+
+  if (searchConditions.length > 0) {
+    andConditions.push({ OR: searchConditions });
   }
 
-  catch (error: any) {
+  if (Object.keys(filterConditions).length > 0) {
+    andConditions.push(filterConditions as Prisma.PaymentWhereInput);
+  }
+
+  const whereConditions: Prisma.PaymentWhereInput = { AND: andConditions };
+
+  try {
+    const [payments, total] = await prisma.$transaction([
+      prisma.payment.findMany({
+        where: whereConditions,
+        skip,
+        take: limit,
+        orderBy,
+        include: {
+          order: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          bookingSlot: {
+            include: {
+              user: {
+                select: {
+                  name: true,
+                },
+              },
+              trainer: {
+                include: {
+                  user: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.payment.count({
+        where: whereConditions,
+      }),
+    ]);
+
+    return {
+      data: payments,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error: any) {
     throw new AppError(status.INTERNAL_SERVER_ERROR, "Error fetching payments", error.message);
   }
-}
+};
 
 export const PaymentService = {
   getPaymentByUserId

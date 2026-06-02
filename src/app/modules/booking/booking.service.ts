@@ -220,46 +220,6 @@ const getAllBookings = async (query: QueryParams) => {
 };
 
 //* Get bookings by user ID (Own only) *//
-// const getBookingsByUserId = async (user: IRequestUser) => {
-//   const isUserExists = await prisma.user.findUnique({
-//     where: {
-//       id: user.userId
-//     }
-//   });
-
-//   if (!isUserExists) {
-//     throw new AppError(status.NOT_FOUND, "User not found");
-//   }
-
-//   const result = await prisma.bookingSlot.findMany({
-//     where: {
-//       userId: user.userId
-//     },
-//     include: {
-//       trainer: {
-//         select: {
-//           user: {
-//             select: {
-//               name: true,
-//               email: true,
-//               image: true
-//             }
-//           }
-//         }
-//       },
-//       slot: {
-//         select: {
-//           date: true,
-//           startTime: true,
-//           endTime: true
-//         }
-//       }
-//     }
-//   });
-
-//   return result;
-// };
-
 const getBookingsByUserId = async (user: IRequestUser, query: QueryParams) => {
 
   const isUserExists = await prisma.user.findUnique({
@@ -296,7 +256,7 @@ const getBookingsByUserId = async (user: IRequestUser, query: QueryParams) => {
   const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
 
   const whereConditions: Prisma.BookingSlotWhereInput[] = [
-    { userId: user.userId }, // Scoping query results to this user only
+    { userId: user.userId }, 
     ...(searchConditions.length > 0 ? [{ OR: searchConditions }] : []),
     { ...filterConditions },
   ];

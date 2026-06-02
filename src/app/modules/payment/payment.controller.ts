@@ -27,18 +27,35 @@ const handleStripeWebhookEvent = catchAsync(async (req: Request, res: Response) 
 
 
 //* Get Payment by user ID (Logged in user) *//
-const getPaymentByUserId = catchAsync(
-	async (req: Request, res: Response) => {
-		const user = req.user;
+// const getPaymentByUserId = catchAsync(
+// 	async (req: Request, res: Response) => {
+// 		const user = req.user;
 
-		const result = await PaymentService.getPaymentByUserId(user);
-		sendResponse(res, {
-			httpStatusCode: status.OK,
-			success: true,
-			message: "Payments retrieved successfully",
-			data: result
-		})
-	}
+// 		const result = await PaymentService.getPaymentByUserId(user);
+// 		sendResponse(res, {
+// 			httpStatusCode: status.OK,
+// 			success: true,
+// 			message: "Payments retrieved successfully",
+// 			data: result
+// 		})
+// 	}
+// );
+
+const getPaymentByUserId = catchAsync(
+  async (req: Request, res: Response) => {
+    const user = req.user;
+    const query = req.query;
+
+    const result = await PaymentService.getPaymentByUserId(user, query);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Payments retrieved successfully",
+      meta: result.meta,
+      data: result.data,
+    });
+  }
 );
 
 export const PaymentController = {
