@@ -128,32 +128,101 @@ const getAllReviews = async (query: QueryParams) => {
 };
 
 //* Get reviews by userID *//
-const getReviewsByUserId = async (user: IRequestUser) => {
-  const isUserExists = await prisma.user.findUnique({
-    where: {
-      id: user.userId
-    }
-  });
+// const getReviewsByUserId = async (user: IRequestUser) => {
+//   const isUserExists = await prisma.user.findUnique({
+//     where: {
+//       id: user.userId
+//     }
+//   });
 
-  if (!isUserExists) {
-    throw new AppError(status.NOT_FOUND, "User not found");
-  }
+//   if (!isUserExists) {
+//     throw new AppError(status.NOT_FOUND, "User not found");
+//   }
 
-  try {
-    const result = await prisma.review.findMany({
-      where: {
-        userId: user.userId
-      }
-    });
+//   try {
+//     const result = await prisma.review.findMany({
+//       where: {
+//         userId: user.userId
+//       },
+//       include: {
+//         trainer: {
+//           include: {
+//             user: {
+//               select: {
+//                 name: true,
+//                 email: true,
+//                 image: true
+//               }
+//             }
+//           }
+//         }
+//       }
+//     });
 
-    return result;
-  }
+//     return result;
+//   }
 
-  catch (error) {
-    console.log("Error fetching reviews by user ID: ", error);
-    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch reviews");
-  }
-}
+//   catch (error) {
+//     console.log("Error fetching reviews by user ID: ", error);
+//     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch reviews");
+//   }
+// }
+
+const getReviewsByUserId = async (user: IRequestUser, query: QueryParams) => {
+  const filterableFields = ["rating", "trainer.avgRating"];
+  const searchableFields = ["trainer.user.name", "trainer.user.email"];
+
+  const paginationOptions = QueryBuilder.getPaginationOptions(query);
+  const { orderBy } = QueryBuilder.getSortOptions(query);
+  
+  const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.ReviewWhereInput>(query, searchableFields);
+  const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
+
+  const { page, limit, skip } = paginationOptions;
+
+  const whereConditions: Prisma.ReviewWhereInput = {
+    userId: user.userId,
+    ...filterConditions,
+    ...(searchConditions.length > 0 ? { OR: searchConditions } : {}),
+  };
+
+  const [result, total] = await prisma.$transaction([
+    prisma.review.findMany({
+      where: whereConditions,
+      skip,
+      take: limit,
+      orderBy: orderBy as Prisma.ReviewOrderByWithRelationInput,
+      include: {
+        trainer: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.review.count({
+      where: whereConditions,
+    }),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    data: result,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages,
+    },
+  };
+};
 
 //* Get reviews by trainer ID *//
 const getReviewsByTrainerId = async (trainerId: string) => {

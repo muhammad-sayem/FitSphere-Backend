@@ -222,63 +222,6 @@ export const handlerStripeWebhookEvent = async (event: Stripe.Event) => {
 };
 
 //* Get Payment by user ID (Logged in user) *//
-// const getPaymentByUserId = async (user: IRequestUser) => {
-//   if (!user || !user.userId) {
-//     return [];
-//   }
-//   const isUserExists = await prisma.user.findUnique({
-//     where: {
-//       id: user.userId
-//     }
-//   });
-
-//   if (!isUserExists) {
-//     throw new AppError(status.NOT_FOUND, "User not found");
-//   }
-
-//   try {
-//     const payments = await prisma.payment.findMany({
-//       where: {
-//         userId: user.userId
-//       },
-//       include: {
-//         order: {
-//           include: {
-//             product: {
-//               select: {
-//                 name: true,
-//               }
-//             }
-//           }
-//         },
-//         bookingSlot: {
-//           include: {
-//             user: {
-//               select: {
-//                 name: true,
-//               }
-//             },
-//             trainer: {
-//               include: {
-//                 user: {
-//                   select: {
-//                     name: true,
-//                   }
-//                 }
-//               }
-//             }
-//           }
-//         }
-//       }
-//     });
-
-//     return payments;
-//   }
-
-//   catch (error: any) {
-//     throw new AppError(status.INTERNAL_SERVER_ERROR, "Error fetching payments", error.message);
-//   }
-// }
 
 const getPaymentByUserId = async (
   user: IRequestUser,
