@@ -52,7 +52,7 @@ const createTrainerProfile = async (user: IRequestUser, payload: ICreateTrainerP
 
 }
 
-//* Get All trainer profiles *//
+//* Get All trainer profiles (From Trainer Profiles Schema) *//
 const getAllTrainerProfiles = async (query: QueryParams) => {
   // For pagination //
   const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
@@ -110,6 +110,78 @@ const getAllTrainerProfiles = async (query: QueryParams) => {
     }
   };
 }
+
+//* Get All trainer profiles (From Users Schema) *//
+const getAllTrainersFromUsers = async (query: QueryParams) => {
+  try {
+    const searchTerm = query?.searchTerm;
+    const status = query?.status;
+    const page = query?.page;
+    const limit = query?.limit;
+    const sortBy = query?.sortBy;
+    const sortOrder = query?.sortOrder;
+
+    const pageNumber = Number(page) || 1;
+    const limitNumber = Number(limit) || 10;
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const andConditions: Prisma.UserWhereInput[] = [
+      {
+        role: "TRAINER",
+        isDeleted: false,
+      },
+    ];
+
+    if (searchTerm) {
+      andConditions.push({
+        name: {
+          contains: String(searchTerm),
+          mode: "insensitive",
+        },
+      });
+    }
+
+    if (status) {
+      andConditions.push({
+        status: status as any,
+      });
+    }
+
+    const whereConditions: Prisma.UserWhereInput = { AND: andConditions };
+
+    const sortWith = sortBy || "name";
+    const sortDirection = sortOrder || "asc";
+    const orderByConditions: Prisma.UserOrderByWithRelationInput = {
+      [sortWith]: sortDirection,
+    };
+
+    const result = await prisma.user.findMany({
+      where: whereConditions,
+      skip,
+      take: limitNumber,
+      orderBy: orderByConditions,
+    });
+
+    const total = await prisma.user.count({
+      where: whereConditions,
+    });
+
+    const totalPages = Math.ceil(total / limitNumber);
+
+    return {
+      meta: {
+        page: pageNumber,
+        limit: limitNumber,
+        total,
+        totalPages,
+      },
+      data: result,
+    };
+  } catch (error) {
+    console.log("Error fetching trainers from users: ", error);
+    throw new AppError(500, "Failed to fetch trainers from users", (error as Error).stack);
+  }
+};
 
 //* Get trainer profile by user ID *//
 const getTrainerProfileByUserId = async (userId: string) => {
@@ -298,6 +370,7 @@ const deleteTrainerProfile = async (user: IRequestUser, trainerProfileId: string
 export const TrainerProfileService = {
   createTrainerProfile,
   getAllTrainerProfiles,
+  getAllTrainersFromUsers,
   getTrainerByTrainerProfileId,
   getTrainerProfileByUserId,
   approvalControlForTrainerProfile,

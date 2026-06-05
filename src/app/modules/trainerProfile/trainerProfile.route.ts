@@ -9,7 +9,9 @@ const router = Router();
 
 router.post("/create-trainer-profile", validateRequest(createTrainerProfileZodSchema), checkAuth(UserRoles.TRAINER), TrainerProfileController.createTrainerProfile);
 
-router.get("/", TrainerProfileController.getAllTrainerProfiles);
+router.get("/", checkAuth(UserRoles.ADMIN), TrainerProfileController.getAllTrainerProfiles);
+
+router.get("/from-users", checkAuth(UserRoles.ADMIN), TrainerProfileController.getAllTrainersFromUsers);
 
 router.get("/:trainerProfileId", TrainerProfileController.getTrainerByTrainerProfileId);
 
