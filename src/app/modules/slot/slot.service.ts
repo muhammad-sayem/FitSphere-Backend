@@ -201,41 +201,94 @@ const getSlotById = async (slotId: string) => {
 };
 
 //* Get Slots by trainer ID ** //
-const getSlotsByTrainerId = async (trainerId: string, query: QueryParams) => {
+const getSlotsByTrainerId = async (
+  user: any,
+  trainerId: string,
+  query: QueryParams
+) => {
   const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
 
-  const slots = await prisma.slot.findMany({
+  const sortBy = (query.sortBy as string) || "date";
+  const sortOrder = query.sortOrder === "desc" ? "desc" : "asc";
+
+  const orderBy = {
+    [sortBy]: sortOrder,
+  };
+
+  const { filterConditions } = QueryBuilder.getFilterConditions(query, ["date"]);
+
+  if (filterConditions && filterConditions.date) {
+    if (typeof filterConditions.date === "string") {
+      filterConditions.date = new Date(filterConditions.date);
+    } else if (
+      typeof filterConditions.date === "object" &&
+      filterConditions.date !== null &&
+      "equals" in filterConditions.date
+    ) {
+      (filterConditions.date as { equals: unknown }).equals = new Date(
+        (filterConditions.date as { equals: string }).equals
+      );
+    }
+  }
+
+  const trainerProfile = await prisma.trainerProfile.findUnique({
     where: {
-      trainerId,
-      isBooked: false
+      userId: user.userId,
     },
-    include: {
-      trainer: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        }
-      }
-    },
-    skip,
-    take: limit,
   });
+
+  if (!trainerProfile) {
+    throw new AppError(status.NOT_FOUND, "Trainer profile not found for the user");
+  }
+
+  const isTrainerValid = trainerProfile.id === trainerId;
+
+  if (!isTrainerValid) {
+    throw new AppError(status.FORBIDDEN, "You can only access your own slots");
+  }
+
+  const whereConditions: Prisma.SlotWhereInput = {
+    trainerId,
+    isBooked: false,
+    ...filterConditions,
+  };
+
+  const [slots, total] = await prisma.$transaction([
+    prisma.slot.findMany({
+      where: whereConditions,
+      include: {
+        trainer: {
+          select: {
+            id: true,
+            feePerHour: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy,
+      skip,
+      take: limit,
+    }),
+    prisma.slot.count({
+      where: whereConditions,
+    }),
+  ]);
 
   return {
     data: slots,
     meta: {
       page,
       limit,
-      total: slots.length,
-      totalPages: Math.ceil(slots.length / limit)
-    }
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
   };
-}
+};
 
 //* Update slot by trainer (own) *//
 const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSlotPayload) => {

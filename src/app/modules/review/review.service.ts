@@ -128,53 +128,13 @@ const getAllReviews = async (query: QueryParams) => {
 };
 
 //* Get reviews by userID *//
-// const getReviewsByUserId = async (user: IRequestUser) => {
-//   const isUserExists = await prisma.user.findUnique({
-//     where: {
-//       id: user.userId
-//     }
-//   });
-
-//   if (!isUserExists) {
-//     throw new AppError(status.NOT_FOUND, "User not found");
-//   }
-
-//   try {
-//     const result = await prisma.review.findMany({
-//       where: {
-//         userId: user.userId
-//       },
-//       include: {
-//         trainer: {
-//           include: {
-//             user: {
-//               select: {
-//                 name: true,
-//                 email: true,
-//                 image: true
-//               }
-//             }
-//           }
-//         }
-//       }
-//     });
-
-//     return result;
-//   }
-
-//   catch (error) {
-//     console.log("Error fetching reviews by user ID: ", error);
-//     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch reviews");
-//   }
-// }
-
 const getReviewsByUserId = async (user: IRequestUser, query: QueryParams) => {
   const filterableFields = ["rating", "trainer.avgRating"];
   const searchableFields = ["trainer.user.name", "trainer.user.email"];
 
   const paginationOptions = QueryBuilder.getPaginationOptions(query);
   const { orderBy } = QueryBuilder.getSortOptions(query);
-  
+
   const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.ReviewWhereInput>(query, searchableFields);
   const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
 
@@ -240,6 +200,15 @@ const getReviewsByTrainerId = async (trainerId: string) => {
     const result = await prisma.review.findMany({
       where: {
         trainerId: trainerId
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            image: true,
+          }
+        }
       }
     });
     return result;

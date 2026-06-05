@@ -30,7 +30,7 @@ app.use('/api/v1', IndexRouters);
 
 // Basic route
 app.get('/', (req: Request, res: Response) => {
-	res.send('Hello, TypeScript + Express!');
+  res.send('Hello, TypeScript + Express!');
 });
 
 app.use(notFound);

@@ -13,7 +13,7 @@ router.get("/", SlotController.getAllSlots);
 
 router.get("/:slotId", SlotController.getSlotById);
 
-router.get("/trainer/:trainerId", SlotController.getSlotsByTrainerId);
+router.get("/trainer/:trainerId", checkAuth(UserRoles.TRAINER), SlotController.getSlotsByTrainerId);
 
 router.patch('/update-slot/:slotId', validateRequest(updateSlotZodSchema), checkAuth(UserRoles.TRAINER), SlotController.updateSlot);
 

@@ -6,12 +6,16 @@ import status from "http-status";
 
 const getAllUsers = catchAsync(
   async (req: Request, res: Response) => {
-    const users = await UserService.getAllUsers();
+    const user = req.user;
+    const query = req.query;
+    const result = await UserService.getAllUsers(user, query);
+
     sendResponse(res, {
       httpStatusCode: status.OK,
       success: true,
       message: "Users retrieved successfully",
-      data: users
+      data: result.data,
+      meta: result.meta
     });
   }
 );

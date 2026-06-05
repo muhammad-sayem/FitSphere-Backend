@@ -52,8 +52,9 @@ const getSlotsByTrainerId = catchAsync(
   async (req: Request, res: Response) => { 
     const { trainerId } = req.params;
     const query = req.query;
+    const user = req.user;
 
-    const result = await SlotService.getSlotsByTrainerId(trainerId as string, query);
+    const result = await SlotService.getSlotsByTrainerId(user, trainerId as string, query);
 
     sendResponse(res, {
       httpStatusCode: status.OK,
