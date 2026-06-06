@@ -8,24 +8,27 @@ import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
 
 //* Create a new product *//
 const createProduct = async (payload: ICreateProductPayload) => {
-  const result = await prisma.product.create({
-    data: payload
-  });
-  return result;
+  try {
+    const result = await prisma.product.create({
+      data: payload
+    });
+
+    return result;
+  }
+  
+  catch (error) {
+    console.log("Error creating product: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create product", (error as Error).stack);
+  }
 }
 
 //* Get all products *//
 const getAllProducts = async (query: QueryParams) => {
-  // For pagination //
   const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
-
-  // For sorting //
   const { orderBy } = QueryBuilder.getSortOptions(query);
 
-  // For searching //
   const searchableFields = ["name", "description"];
   const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.ProductWhereInput>(query, searchableFields);
-
 
   const filterableFields = ["category", "remainingStock", "price"];
   const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
@@ -35,11 +38,17 @@ const getAllProducts = async (query: QueryParams) => {
     { ...filterConditions }
   ];
 
+  const finalWhere = whereConditions.length > 0 ? { AND: whereConditions } : undefined;
+
   const products = await prisma.product.findMany({
-    where: whereConditions.length > 0 ? { AND: whereConditions } : undefined,
+    where: finalWhere,
     skip,
     take: limit,
     orderBy
+  });
+
+  const total = await prisma.product.count({
+    where: finalWhere
   });
 
   return {
@@ -47,8 +56,8 @@ const getAllProducts = async (query: QueryParams) => {
     meta: {
       page,
       limit,
-      total: products.length,
-      totalPages: Math.ceil(products.length / limit)
+      total,
+      totalPages: Math.ceil(total / limit)
     }
   };
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import status from "http-status";
 import { IRequestUser } from "../../interfaces/requestUser.interface"
 import { prisma } from "../../lib/prisma"

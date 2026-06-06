@@ -51,7 +51,7 @@ const getAllTrainersFromUsers = catchAsync(
       meta: result.meta
     })
   }
-)
+);
 
 //* Get trainer profile by user ID *//
 const getTrainerProfileByUserId = catchAsync(
