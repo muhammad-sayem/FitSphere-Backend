@@ -7,4 +7,6 @@ const router = Router();
 
 router.get("/", checkAuth(UserRoles.ADMIN), UserControllers.getAllUsers);
 
+router.patch("/change-user-status/:userId", checkAuth(UserRoles.ADMIN), UserControllers.changeUserStatus);
+
 export const UserRoute = router;

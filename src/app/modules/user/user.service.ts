@@ -3,7 +3,7 @@ import status from "http-status";
 import AppError from "../../errorHelpers/AppError";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
-import { UserRoles } from "../../../generated/prisma/client";
+import { UserRoles, UserStatus } from "../../../generated/prisma/client";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
 
 const getAllUsers = async (user: IRequestUser, query: QueryParams) => {
@@ -15,7 +15,7 @@ const getAllUsers = async (user: IRequestUser, query: QueryParams) => {
 
   try {
     const searchableFields = ["name", "email"];
-  
+
     const filterableFields = ["status"];
 
     const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
@@ -75,6 +75,39 @@ const getAllUsers = async (user: IRequestUser, query: QueryParams) => {
   }
 };
 
+//* Change user status (active, banned  by admin only) *//
+const changeUserStatus = async (userId: string, newStatus: UserStatus) => {
+  const isUserExist = await prisma.user.findUnique({
+    where: {
+      id: userId
+    }
+  }
+  );
+
+  if (!isUserExist) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  try {
+    const result = await prisma.user.update({
+      where: {
+        id: userId
+      },
+      data: {
+        status: newStatus
+      }
+    });
+
+    return result;
+  }
+
+  catch (error: any) {
+    console.log("Error changing user status: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to change user status");
+  }
+}
+
 export const UserService = {
   getAllUsers,
+  changeUserStatus,
 };

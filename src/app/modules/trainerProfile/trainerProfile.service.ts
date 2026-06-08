@@ -372,10 +372,30 @@ const deleteTrainerProfile = async (user: IRequestUser, trainerProfileId: string
   }
 
   try {
-    const result = await prisma.trainerProfile.delete({
-      where: {
-        id: trainerProfileId
-      }
+    // const result = await prisma.trainerProfile.delete({
+    //   where: {
+    //     id: trainerProfileId
+    //   }
+    // });
+
+    // return result;
+
+    const result = await prisma.$transaction(async(tx) => {
+      await tx.trainerProfile.delete({
+        where: {
+          id: trainerProfileId
+        }
+      });
+
+      await tx.user.update({
+        where: {
+          id: isTrainerExists.userId
+        },
+        data: {
+          isDeleted: true,
+          // status: UserStatus.BANNED
+        }
+      });
     });
 
     return result;
