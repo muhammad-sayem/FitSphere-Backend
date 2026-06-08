@@ -60,7 +60,10 @@ const updateProduct = catchAsync(
   async (req: Request, res: Response) => {
     const { productId } = req.params;
     const user = req.user;
-    const payload = req.body;
+    const payload = {
+      ...req.body,
+      image: req.file?.path
+    };
 
     const result = await ProductService.updateProduct(user, productId as string, payload);
 

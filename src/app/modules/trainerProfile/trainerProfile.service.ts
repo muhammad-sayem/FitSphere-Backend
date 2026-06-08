@@ -74,7 +74,6 @@ const getAllTrainerProfiles = async (query: QueryParams) => {
   const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
 
   const whereConditions = [
-    { isApproved: true },
     ...(searchConditions.length > 0 ? [{ OR: searchConditions }] : []),
     { ...filterConditions }
   ];
@@ -228,6 +227,27 @@ const getTrainerByTrainerProfileId = async (trainerProfileId: string) => {
   return result;
 }
 
+//* Get not approved trainer profiles *//
+const getNotApprovedTrainerProfiles = async () => {
+  try {
+    const result = await prisma.trainerProfile.findMany({
+      where: {
+        isApproved: false
+      },
+      include: {
+        user: true
+      }
+    });
+
+    return result;
+  }
+
+  catch (error) {
+    console.log("Error fetching not approved trainer profiles: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch not approved trainer profiles", (error as Error).stack);
+  }
+}
+
 //* Approval contorl for a trainer profile (Admin Only)*//
 const approvalControlForTrainerProfile = async (user: IRequestUser, trainerProfileId: string, isApproved: boolean) => {
   const isUserExists = await prisma.user.findUnique({
@@ -268,7 +288,7 @@ const approvalControlForTrainerProfile = async (user: IRequestUser, trainerProfi
 
     return result;
   }
-  
+
   catch (error) {
     console.log("Error updating trainer profile: ", error);
     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to update trainer profile", (error as Error).stack);
@@ -299,11 +319,11 @@ const updateTrainerProfile = async (user: IRequestUser, trainerProfileId: string
 
   const isValidTrainer = user.userId === isTrainerExists.userId;
 
-  if(!isValidTrainer) {
+  if (!isValidTrainer) {
     throw new AppError(status.FORBIDDEN, "Trainers can only update their own profiles");
   }
-  
-  try{
+
+  try {
     const result = await prisma.trainerProfile.update({
       where: {
         id: trainerProfileId
@@ -360,7 +380,7 @@ const deleteTrainerProfile = async (user: IRequestUser, trainerProfileId: string
 
     return result;
   }
-  
+
   catch (error) {
     console.log("Error deleting trainer profile: ", error);
     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to delete trainer profile", (error as Error).stack);
@@ -374,6 +394,7 @@ export const TrainerProfileService = {
   getAllTrainersFromUsers,
   getTrainerByTrainerProfileId,
   getTrainerProfileByUserId,
+  getNotApprovedTrainerProfiles,
   approvalControlForTrainerProfile,
   updateTrainerProfile,
   deleteTrainerProfile

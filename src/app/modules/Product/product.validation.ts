@@ -6,11 +6,9 @@ export const createProductZodSchema = z.object({
     description: z.string().min(1, "Product description is required"),
     price: z.coerce.number({
     }).positive("Price must be a positive number"),
-    
     category: z.string().min(1, "Product category is required"),
     remainingStock: z.coerce.number({
     }).int("Remaining stock must be an integer").nonnegative("Remaining stock must be a non-negative integer"),
-    
     image: z.string().optional(),
   })
 });

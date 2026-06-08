@@ -73,7 +73,9 @@ const getTrainerProfileByUserId = catchAsync(
 const getTrainerByTrainerProfileId = catchAsync(
   async (req: Request, res: Response) => {
     const { trainerProfileId } = req.params;
+    
     const result = await TrainerProfileService.getTrainerByTrainerProfileId(trainerProfileId as string);
+
     sendResponse(res, {
       httpStatusCode: status.OK,
       success: true,
@@ -81,6 +83,20 @@ const getTrainerByTrainerProfileId = catchAsync(
       data: result
     })
   }
+);
+
+//* Get not approved trainer profiles *//
+const getNotApprovedTrainerProfiles = catchAsync(
+    async (req: Request, res: Response) => {
+      const result = await TrainerProfileService.getNotApprovedTrainerProfiles();
+
+      sendResponse(res, {
+        httpStatusCode: status.OK,
+        success: true,
+        message: "Not approved trainer profiles retrieved successfully",
+        data: result
+      });
+    }
 );
 
 //* Approval contorl for a trainer profile (Admin Only)*//
@@ -143,6 +159,7 @@ export const TrainerProfileController = {
   getAllTrainersFromUsers,
   getTrainerByTrainerProfileId,
   getTrainerProfileByUserId,
+  getNotApprovedTrainerProfiles,
   approvalControlForTrainerProfile,
   updateTrainerProfile,
   deleteTrainerProfile
