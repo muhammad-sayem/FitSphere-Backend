@@ -6,6 +6,7 @@ import { prisma } from "../../lib/prisma";
 import { UserRoles, UserStatus } from "../../../generated/prisma/client";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
 
+//* Get all users with pagination, sorting, searching, and filtering (admin only) *//
 const getAllUsers = async (user: IRequestUser, query: QueryParams) => {
   const isAdmin = user.role === UserRoles.ADMIN;
 
@@ -107,7 +108,40 @@ const changeUserStatus = async (userId: string, newStatus: UserStatus) => {
   }
 }
 
+//* Delete user (soft delete by admin only) *//
+const deleteUser = async (userId: string) => {
+  const isUserExist = await prisma.user.findUnique({
+    where: {
+      id: userId
+    }
+  }
+  );
+
+  if (!isUserExist) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  try {
+    const result = await prisma.user.update({
+      where: {
+        id: userId
+      },
+      data: {
+        isDeleted: true
+      }
+    });
+
+    return result;
+  }
+  
+  catch (error: any) {
+    console.log("Error deleting user: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to delete user");
+  }
+}
+
 export const UserService = {
   getAllUsers,
   changeUserStatus,
+  deleteUser
 };

@@ -35,11 +35,25 @@ const changeUserStatus = catchAsync(
       data: result
     })
   }
-)
+);
 
+//* Delete user (soft delete by admin only) *//
+const deleteUser = catchAsync(
+  async (req: Request, res: Response) => {
+    const { userId } = req.params;
 
+    const result = await UserService.deleteUser(userId as string);
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "User deleted successfully",
+      data: result
+    })
+  }
+);
 
 export const UserControllers = {
   getAllUsers,
-  changeUserStatus
+  changeUserStatus,
+  deleteUser
 };

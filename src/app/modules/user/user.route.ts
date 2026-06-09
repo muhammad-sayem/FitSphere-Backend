@@ -9,4 +9,6 @@ router.get("/", checkAuth(UserRoles.ADMIN), UserControllers.getAllUsers);
 
 router.patch("/change-user-status/:userId", checkAuth(UserRoles.ADMIN), UserControllers.changeUserStatus);
 
+router.delete("/delete-user/:userId", checkAuth(UserRoles.ADMIN), UserControllers.deleteUser);
+
 export const UserRoute = router;
