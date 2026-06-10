@@ -27,7 +27,7 @@ const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
       throw new AppError(status.BAD_REQUEST, "Start time must be before end time");
     }
 
-    const isSlotUnavailable = await prisma.slot.findFirst({
+    const isSlotAvailable = await prisma.slot.findFirst({
       where: {
         date: new Date(payload.date),
         startTime: payload.startTime,
@@ -38,7 +38,7 @@ const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
       }
     });
 
-    if (isSlotUnavailable) {
+    if (isSlotAvailable) {
       throw new AppError(status.CONFLICT, "Slot with the same date and time already exists");
     }
 
@@ -53,7 +53,10 @@ const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
     return result;
   }
 
-  catch (error) {
+  catch (error: any) {
+    if (error instanceof AppError) {
+      throw error;
+    }
     console.log("Error creating slot: ", error);
     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create slot");
   }
@@ -201,11 +204,7 @@ const getSlotById = async (slotId: string) => {
 };
 
 //* Get Slots by trainer ID ** //
-const getSlotsByTrainerId = async (
-  user: any,
-  trainerId: string,
-  query: QueryParams
-) => {
+const getSlotsByTrainerId = async (user: any, trainerId: string, query: QueryParams) => {
   const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
 
   const sortBy = (query.sortBy as string) || "date";
@@ -217,17 +216,13 @@ const getSlotsByTrainerId = async (
 
   const { filterConditions } = QueryBuilder.getFilterConditions(query, ["date"]);
 
-  if (filterConditions && filterConditions.date) {
-    if (typeof filterConditions.date === "string") {
-      filterConditions.date = new Date(filterConditions.date);
-    } else if (
-      typeof filterConditions.date === "object" &&
-      filterConditions.date !== null &&
-      "equals" in filterConditions.date
-    ) {
-      (filterConditions.date as { equals: unknown }).equals = new Date(
-        (filterConditions.date as { equals: string }).equals
-      );
+  if (filterConditions && filterConditions.date && typeof filterConditions.date === "object") {
+    const dateFilter = filterConditions.date as Record<string, unknown>;
+    if (dateFilter.gte && typeof dateFilter.gte === "string") {
+      dateFilter.gte = new Date(dateFilter.gte);
+    }
+    if (dateFilter.lte && typeof dateFilter.lte === "string") {
+      dateFilter.lte = new Date(dateFilter.lte);
     }
   }
 
@@ -249,7 +244,6 @@ const getSlotsByTrainerId = async (
 
   const whereConditions: Prisma.SlotWhereInput = {
     trainerId,
-    isBooked: false,
     ...filterConditions,
   };
 
@@ -324,7 +318,7 @@ const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSl
     throw new AppError(status.NOT_FOUND, "Slot not found or you are trying to update other trainer's slot");
   }
 
-  const isSlotUnavailable = await prisma.slot.findFirst({
+  const isSlotAvailable = await prisma.slot.findFirst({
     where: {
       date: new Date(payload.date),
       startTime: payload.startTime,
@@ -335,7 +329,7 @@ const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSl
     }
   });
 
-  if (isSlotUnavailable) {
+  if (isSlotAvailable) {
     throw new AppError(status.CONFLICT, "Slot with the same date and time already exists");
   }
 
