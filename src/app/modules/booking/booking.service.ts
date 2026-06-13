@@ -70,14 +70,14 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
         }
       });
 
-      await tx.slot.update({
-        where: {
-          id: payload.slotId
-        },
-        data: {
-          isBooked: true
-        }
-      });
+      // await tx.slot.update({
+      //   where: {
+      //     id: payload.slotId
+      //   },
+      //   data: {
+      //     isBooked: true
+      //   }
+      // });
 
       const paymentData = await tx.payment.create({
         data: {
@@ -401,7 +401,7 @@ const deleteBooking = async (user: IRequestUser, bookingId: string) => {
     throw new AppError(status.FORBIDDEN, "You can't delete others' bookings. You can only delete your own bookings");
   }
 
-  if (isOwnBooking.paymentStatus) {
+  if (isOwnBooking.paymentStatus === PaymentStatus.SUCCEEDED) {
     throw new AppError(status.BAD_REQUEST, "Paid booking cannot be deleted");
   }
 

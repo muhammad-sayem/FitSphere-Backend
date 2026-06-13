@@ -129,40 +129,6 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
 }
 
 //* Get own orders (By user only) *//
-// const getOwnOrders = async (user: IRequestUser) => {
-//   const isUserExists = await prisma.user.findUnique({
-//     where: {
-//       id: user.userId
-//     }
-//   });
-
-//   if (!isUserExists) {
-//     throw new AppError(status.NOT_FOUND, "User not found");
-//   }
-
-//   try {
-//     const result = await prisma.order.findMany({
-//       where: {
-//         userId: user.userId
-//       },
-//       include: {
-//         product: {
-//           select: {
-//             name: true,
-//           }
-//         }
-//       }
-//     });
-
-//     return result;
-//   }
-
-//   catch (error) {
-//     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to fetch orders", (error as Error).stack);
-//   }
-
-// };
-
 const getOwnOrders = async (user: IRequestUser, query: QueryParams) => {
   const isUserExists = await prisma.user.findUnique({
     where: {

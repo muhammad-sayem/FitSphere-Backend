@@ -204,7 +204,7 @@ const getSlotById = async (slotId: string) => {
 };
 
 //* Get Slots by trainer ID ** //
-const getSlotsByTrainerId = async (user: any, trainerId: string, query: QueryParams) => {
+const getSlotsByTrainerId = async (trainerId: string, query: QueryParams) => {
   const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
 
   const sortBy = (query.sortBy as string) || "date";
@@ -226,21 +226,21 @@ const getSlotsByTrainerId = async (user: any, trainerId: string, query: QueryPar
     }
   }
 
-  const trainerProfile = await prisma.trainerProfile.findUnique({
-    where: {
-      userId: user.userId,
-    },
-  });
+  // const trainerProfile = await prisma.trainerProfile.findUnique({
+  //   where: {
+  //     userId: user?.userId,
+  //   },
+  // });
 
-  if (!trainerProfile) {
-    throw new AppError(status.NOT_FOUND, "Trainer profile not found for the user");
-  }
+  // if (!trainerProfile) {
+  //   throw new AppError(status.NOT_FOUND, "Trainer profile not found for the user");
+  // }
 
-  const isTrainerValid = trainerProfile.id === trainerId;
+  // const isTrainerValid = trainerProfile.id === trainerId;
 
-  if (!isTrainerValid) {
-    throw new AppError(status.FORBIDDEN, "You can only access your own slots");
-  }
+  // if (!isTrainerValid) {
+  //   throw new AppError(status.FORBIDDEN, "You can only access your own slots");
+  // }
 
   const whereConditions: Prisma.SlotWhereInput = {
     trainerId,
@@ -259,6 +259,7 @@ const getSlotsByTrainerId = async (user: any, trainerId: string, query: QueryPar
               select: {
                 name: true,
                 email: true,
+                image: true
               },
             },
           },
@@ -288,7 +289,7 @@ const getSlotsByTrainerId = async (user: any, trainerId: string, query: QueryPar
 const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSlotPayload) => {
   const isUserExists = await prisma.user.findUnique({
     where: {
-      id: user.userId
+      id: user?.userId
     }
   });
 
@@ -298,7 +299,7 @@ const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSl
 
   const isTrainer = await prisma.trainerProfile.findUnique({
     where: {
-      userId: user.userId
+      userId: user?.userId
     }
   });
 
@@ -324,7 +325,7 @@ const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSl
       startTime: payload.startTime,
       endTime: payload.endTime,
       trainer: {
-        userId: user.userId
+        userId: user?.userId
       }
     }
   });
@@ -363,7 +364,7 @@ const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSl
 const deleteSlot = async (user: IRequestUser, slotId: string) => {
   const isTrainer = await prisma.trainerProfile.findUnique({
     where: {
-      userId: user.userId
+      userId: user?.userId
     }
   });
 

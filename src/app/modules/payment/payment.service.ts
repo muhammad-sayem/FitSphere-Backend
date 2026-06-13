@@ -101,6 +101,15 @@ const processTrainerBookingPayment = async (event: Stripe.Event, data: TStripeDa
       }
     });
 
+    await tx.slot.update({
+      where: {
+        id: bookingSlot.slotId
+      },
+      data: {
+        isBooked: true
+      }
+    });
+
     return payment;
   });
 
@@ -222,11 +231,7 @@ export const handlerStripeWebhookEvent = async (event: Stripe.Event) => {
 };
 
 //* Get Payment by user ID (Logged in user) *//
-
-const getPaymentByUserId = async (
-  user: IRequestUser,
-  query: QueryParams
-) => {
+const getPaymentByUserId = async ( user: IRequestUser, query: QueryParams)=> {
   if (!user || !user.userId) {
     return {
       meta: {

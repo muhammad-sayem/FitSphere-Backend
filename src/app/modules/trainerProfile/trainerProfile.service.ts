@@ -89,6 +89,7 @@ const getAllTrainerProfiles = async (query: QueryParams) => {
           select: {
             name: true,
             email: true,
+            image: true,
             status: true,
             isDeleted: true
           }
@@ -372,7 +373,7 @@ const deleteTrainerProfile = async (user: IRequestUser, trainerProfileId: string
   }
 
   try {
-    const result = await prisma.$transaction(async(tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       await tx.trainerProfile.delete({
         where: {
           id: trainerProfileId
