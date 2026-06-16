@@ -90,6 +90,22 @@ const updateReview = catchAsync(
   }
 );
 
+//* Is already reviewed or not *//
+const isAlreadyReviewed = catchAsync(
+  async (req: Request, res: Response) => {
+    const user = req.user;
+    const trainerId = req.params.trainerId;
+    const result = await ReviewService.isAlreadyReviewed(user, trainerId as string);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Review status retrieved successfully",
+      data: result
+    });
+  }
+);
+
 //* Delete review by user (own) *//
 const deleteReview = catchAsync(
   async (req: Request, res: Response) => {
@@ -114,5 +130,6 @@ export const ReviewController = {
   getReviewsByUserId,
   getReviewsByTrainerId,
   deleteReview,
+  isAlreadyReviewed,
   updateReview
 }

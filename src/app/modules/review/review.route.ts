@@ -17,6 +17,8 @@ router.get("/trainer/:trainerId/reviews", ReviewController.getReviewsByTrainerId
 
 router.patch("/update-review/:reviewId", validateRequest(CreateReviewZodSchema.partial()), checkAuth(UserRoles.USER), ReviewController.updateReview);
 
+router.get("/is-already-reviewed/:trainerId", checkAuth(UserRoles.USER, UserRoles.TRAINER, UserRoles.ADMIN), ReviewController.isAlreadyReviewed);
+
 router.delete("/delete-review/:reviewId", checkAuth(UserRoles.USER), ReviewController.deleteReview);
 
 export const TrainerReviewRoute = router;

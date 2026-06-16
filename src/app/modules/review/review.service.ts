@@ -258,6 +258,45 @@ const updateReview = async (user: IRequestUser, reviewId: string, payload: IUpda
   }
 }
 
+//* Checking Already reviewd or not *//
+const isAlreadyReviewed = async (user: IRequestUser, trainerId: string) => {
+  const isUserExists = await prisma.user.findUnique({
+    where: {
+      id: user.userId
+    }
+  });
+
+  if (!isUserExists) {
+    throw new AppError(status.NOT_FOUND, "User not found");
+  }
+
+  const isTrainerExists = await prisma.trainerProfile.findUnique({
+    where: {
+      id: trainerId
+    }
+  });
+
+  if (!isTrainerExists) {
+    throw new AppError(status.NOT_FOUND, "Trainer not found");
+  }
+
+  try{
+    const alreadyReviewed = await prisma.review.findFirst({
+      where: {
+        userId: user.userId,
+        trainerId: trainerId
+      }
+    });
+
+    return !!alreadyReviewed;
+  }
+
+  catch(error) {
+    console.log("Error checking review existence: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to check review existence");
+  }
+}
+
 //* Delete review by user (own) *//
 const deleteReview = async (user: IRequestUser, reviewId: string) => {
   const isReviewExists = await prisma.review.findFirst({
@@ -327,5 +366,6 @@ export const ReviewService = {
   getReviewsByUserId,
   getReviewsByTrainerId,
   updateReview,
+  isAlreadyReviewed,
   deleteReview
 }

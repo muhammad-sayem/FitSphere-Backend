@@ -17,7 +17,6 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
   const isProductExists = await prisma.product.findFirst({
     where: {
       id: payload.productId,
-
     }
   });
 
@@ -93,7 +92,7 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
           paymentId: paymentData.id,
           purpose: PaymentPurpose.PRODUCT_ORDER,
         },
-        success_url: `${paymentRedirectBaseUrl}/dashboard/payment/payment-success`,
+        success_url: `${paymentRedirectBaseUrl}/payment/payment-success`,
         cancel_url: `${paymentRedirectBaseUrl}/dashboard/orders`,
       });
 

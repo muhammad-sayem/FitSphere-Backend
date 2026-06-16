@@ -117,7 +117,7 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
           paymentId: paymentData.id,
           purpose: PaymentPurpose.TRAINER_BOOKING,
         },
-        success_url: `${paymentRedirectBaseUrl}/dashboard/payment/payment-success`,
+        success_url: `${paymentRedirectBaseUrl}/payment/payment-success`,
         cancel_url: `${paymentRedirectBaseUrl}/dashboard/appointments`,
       });
 

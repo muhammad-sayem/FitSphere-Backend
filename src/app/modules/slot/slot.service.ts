@@ -214,7 +214,7 @@ const getSlotsByTrainerId = async (trainerId: string, query: QueryParams) => {
     [sortBy]: sortOrder,
   };
 
-  const { filterConditions } = QueryBuilder.getFilterConditions(query, ["date"]);
+  const { filterConditions } = QueryBuilder.getFilterConditions(query, ["date", "isBooked"]);
 
   if (filterConditions && filterConditions.date && typeof filterConditions.date === "object") {
     const dateFilter = filterConditions.date as Record<string, unknown>;
