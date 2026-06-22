@@ -22,11 +22,27 @@ const createTrainerProfile = catchAsync(
   }
 );
 
-//* Get All trainer profiles *//
-const getAllTrainerProfiles = catchAsync(
+//* Get All trainer profiles (Approved, not approved, active, banned all allowed) *//
+const getAllTrainers = catchAsync(
   async (req: Request, res: Response) => {
     const query = req.query;
-    const result = await TrainerProfileService.getAllTrainerProfiles(query as QueryParams);
+    const result = await TrainerProfileService.getAllTrainers(query as QueryParams);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Trainer profiles retrieved successfully",
+      data: result.data,
+      meta: result.meta
+    })
+  }
+)
+
+//* Get All trainer profiles *//
+const getAllTrainerProfilesApprovedOnly = catchAsync(
+  async (req: Request, res: Response) => {
+    const query = req.query;
+    const result = await TrainerProfileService.getAllTrainerProfilesApprovedOnly(query as QueryParams);
     sendResponse(res, {
       httpStatusCode: status.OK,
       success: true,
@@ -155,7 +171,8 @@ const deleteTrainerProfile = catchAsync(
 
 export const TrainerProfileController = {
   createTrainerProfile,
-  getAllTrainerProfiles,
+  getAllTrainers,
+  getAllTrainerProfilesApprovedOnly,
   getAllTrainersFromUsers,
   getTrainerByTrainerProfileId,
   getTrainerProfileByUserId,

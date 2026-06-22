@@ -53,29 +53,88 @@ const createTrainerProfile = async (user: IRequestUser, payload: ICreateTrainerP
 
 }
 
-//* Get All trainer profiles (From Trainer Profiles Schema) *//
-const getAllTrainerProfiles = async (query: QueryParams) => {
-  // For pagination //
+//* Get All Trainer Profiles (Approved, not aaproved, active, banned all allowed) *//
+const getAllTrainers = async (query: QueryParams) => {
   const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
 
-  // For sorting //
   const trainerQuery = {
     ...query,
     sortBy: query.sortBy ?? "avgRating",
   };
   const { orderBy } = QueryBuilder.getSortOptions(trainerQuery);
 
-  // For searching //
   const searchableFields = ["user.name", "user.email"];
   const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.TrainerProfileWhereInput>(query, searchableFields);
 
-  // For filtering //
   const filterableFields = ["feePerHour", "experience", "avgRating", "user.status"];
   const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
 
   const whereConditions = [
     ...(searchConditions.length > 0 ? [{ OR: searchConditions }] : []),
     { ...filterConditions }
+  ];
+
+  const [trainerProfiles, total] = await Promise.all([
+    prisma.trainerProfile.findMany({
+      where: whereConditions.length > 0 ? { AND: whereConditions } : undefined,
+      skip,
+      take: limit,
+      orderBy,
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            image: true,
+            status: true,
+            isDeleted: true
+          }
+        }
+      }
+    }),
+    prisma.trainerProfile.count({
+      where: whereConditions.length > 0 ? { AND: whereConditions } : undefined,
+    })
+  ]);
+
+  return {
+    data: trainerProfiles,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  };
+}
+
+//* Get All trainer profiles (From Trainer Profiles Schema only approved trainers) *//
+const getAllTrainerProfilesApprovedOnly = async (query: QueryParams) => {
+  const { page, limit, skip } = QueryBuilder.getPaginationOptions(query);
+
+  const trainerQuery = {
+    ...query,
+    sortBy: query.sortBy ?? "avgRating",
+  };
+  const { orderBy } = QueryBuilder.getSortOptions(trainerQuery);
+
+  const searchableFields = ["user.name", "user.email"];
+  const { searchConditions } = QueryBuilder.getSearchConditions<Prisma.TrainerProfileWhereInput>(query, searchableFields);
+
+  const filterableFields = ["feePerHour", "experience", "avgRating", "user.status"];
+  const { filterConditions } = QueryBuilder.getFilterConditions(query, filterableFields);
+
+  const whereConditions = [
+    ...(searchConditions.length > 0 ? [{ OR: searchConditions }] : []),
+    { ...filterConditions },
+    {
+      user: {
+        status: "ACTIVE"
+      }
+    },
+    {
+      isApproved: true
+    }
   ];
 
   const [trainerProfiles, total] = await Promise.all([
@@ -151,7 +210,7 @@ const getAllTrainersFromUsers = async (query: QueryParams) => {
     const whereConditions: Prisma.UserWhereInput = { AND: andConditions };
 
     const sortWith = sortBy || "name";
-    const sortDirection = sortOrder || "asc";
+    const sortDirection = sortOrder || "desc";
     const orderByConditions: Prisma.UserOrderByWithRelationInput = {
       [sortWith]: sortDirection,
     };
@@ -403,7 +462,8 @@ const deleteTrainerProfile = async (user: IRequestUser, trainerProfileId: string
 
 export const TrainerProfileService = {
   createTrainerProfile,
-  getAllTrainerProfiles,
+  getAllTrainers,
+  getAllTrainerProfilesApprovedOnly,
   getAllTrainersFromUsers,
   getTrainerByTrainerProfileId,
   getTrainerProfileByUserId,
