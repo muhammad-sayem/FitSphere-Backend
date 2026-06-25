@@ -9,6 +9,7 @@ import { Prisma } from "../../../generated/prisma/browser";
 import { ICreateSlotPayload, IUpdateSlotPayload } from "./slot.interface";
 
 //* Create a new slot for a trainer (by trainer only) *//
+
 const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
   const isTrainer = await prisma.trainerProfile.findUnique({
     where: {
@@ -23,22 +24,34 @@ const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
   try {
     const { date, startTime, endTime } = payload;
 
-    if (startTime > endTime) {
+    const formattedStartTime = startTime.trim();
+    const formattedEndTime = endTime.trim();
+
+    if (formattedStartTime > formattedEndTime) {
       throw new AppError(status.BAD_REQUEST, "Start time must be before end time");
     }
 
-    const isSlotAvailable = await prisma.slot.findFirst({
+    const startOfDay = new Date(date);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const isSlotAlreadyCreated = await prisma.slot.findFirst({
       where: {
-        date: new Date(payload.date),
-        startTime: payload.startTime,
-        endTime: payload.endTime,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay
+        },
+        startTime: formattedStartTime,
+        endTime: formattedEndTime,
         trainer: {
           userId: user.userId
         }
       }
     });
 
-    if (isSlotAvailable) {
+    if (isSlotAlreadyCreated) {
       throw new AppError(status.CONFLICT, "Slot with the same date and time already exists");
     }
 
@@ -46,8 +59,8 @@ const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
       data: {
         trainerId: isTrainer.id,
         date: new Date(date),
-        startTime,
-        endTime
+        startTime: formattedStartTime,
+        endTime: formattedEndTime
       }
     });
     return result;

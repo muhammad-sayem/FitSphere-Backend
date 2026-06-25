@@ -5,6 +5,7 @@ import { UserRoles } from "../../../generated/prisma/enums";
 
 const router = Router();
 
+router.post("/webhook", PaymentController.handleStripeWebhookEvent);
 router.get("/my-payments", checkAuth(UserRoles.USER, UserRoles.TRAINER), PaymentController.getPaymentByUserId);
 
 export const PaymentRoute = router;

@@ -60,29 +60,9 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
     const result = await prisma.$transaction(async (tx) => {
       const transactionId = String(uuidv7());
 
-      const booking = await tx.bookingSlot.create({
-        data: {
-          userId: user.userId,
-          trainerId: payload.trainerId,
-          slotId: payload.slotId,
-          feeAmount: isTrainerExists.feePerHour,
-          transactionId
-        }
-      });
-
-      // await tx.slot.update({
-      //   where: {
-      //     id: payload.slotId
-      //   },
-      //   data: {
-      //     isBooked: true
-      //   }
-      // });
-
       const paymentData = await tx.payment.create({
         data: {
           userId: user.userId,
-          bookingSlotId: booking.id,
           purpose: PaymentPurpose.TRAINER_BOOKING,
           provider: PaymentProvider.STRIPE,
           status: PaymentStatus.PENDING,
@@ -107,14 +87,20 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
         ],
         payment_intent_data: {
           metadata: {
-            bookingSlotId: booking.id,
             paymentId: paymentData.id,
+            trainerId: payload.trainerId,
+            slotId: payload.slotId,
+            userId: user.userId,
+            feeAmount: String(isTrainerExists.feePerHour),
             purpose: PaymentPurpose.TRAINER_BOOKING,
           }
         },
         metadata: {
-          bookingSlotId: booking.id,
           paymentId: paymentData.id,
+          trainerId: payload.trainerId,
+          slotId: payload.slotId,
+          userId: user.userId,
+          feeAmount: String(isTrainerExists.feePerHour),
           purpose: PaymentPurpose.TRAINER_BOOKING,
         },
         success_url: `${paymentRedirectBaseUrl}/payment/payment-success`,
@@ -126,7 +112,6 @@ const createBooking = async (user: IRequestUser, payload: ICreateBookingPayload)
       }
 
       return {
-        booking,
         paymentData,
         paymentUrl: session.url,
       };

@@ -46,71 +46,106 @@ const getAmount = (data: TStripeDataObject) => {
 };
 
 const processTrainerBookingPayment = async (event: Stripe.Event, data: TStripeDataObject, isSuccessful: boolean) => {
-  const bookingSlotId = data.metadata?.bookingSlotId;
+  const paymentId = data.metadata?.paymentId;
+  const trainerId = data.metadata?.trainerId;
+  const slotId = data.metadata?.slotId;
+  const userId = data.metadata?.userId;
 
-  if (!bookingSlotId) {
-    throw new AppError(status.BAD_REQUEST, "bookingSlotId is required for trainer booking payment");
+  if (!paymentId) {
+    throw new AppError(status.BAD_REQUEST, "paymentId is required for trainer booking payment");
   }
 
-  const bookingSlot = await prisma.bookingSlot.findUnique({
+  const payment = await prisma.payment.findUnique({
     where: {
-      id: bookingSlotId
+      id: paymentId
     }
   });
 
-  if (!bookingSlot) {
-    throw new AppError(status.NOT_FOUND, "Booking slot not found");
+  if (!payment) {
+    throw new AppError(status.NOT_FOUND, "Payment not found");
   }
 
   const transactionId = getTransactionId(data.payment_intent, data.id);
   const amount = getAmount(data);
 
   const result = await prisma.$transaction(async (tx) => {
-    const payment = await tx.payment.upsert({
+    let bookingSlotId = payment.bookingSlotId;
+    let slotIdToBook = slotId;
+
+    if (isSuccessful && !bookingSlotId) {
+      if (!trainerId || !slotId || !userId) {
+        throw new AppError(status.BAD_REQUEST, "trainerId, slotId and userId are required for trainer booking payment");
+      }
+
+      const createdBooking = await tx.bookingSlot.create({
+        data: {
+          userId,
+          trainerId,
+          slotId,
+          feeAmount: payment.amount,
+          paymentStatus: PaymentStatus.SUCCEEDED,
+          transactionId,
+        }
+      });
+
+      bookingSlotId = createdBooking.id;
+      slotIdToBook = createdBooking.slotId;
+    }
+
+    if (isSuccessful && bookingSlotId && !slotIdToBook) {
+      const existingBooking = await tx.bookingSlot.findUnique({
+        where: {
+          id: bookingSlotId,
+        },
+        select: {
+          slotId: true,
+        },
+      });
+
+      if (!existingBooking) {
+        throw new AppError(status.NOT_FOUND, "Booking slot not found");
+      }
+
+      slotIdToBook = existingBooking.slotId;
+    }
+
+    const updatedPayment = await tx.payment.update({
       where: {
-        bookingSlotId
+        id: payment.id,
       },
-      update: {
+      data: {
+        bookingSlotId: bookingSlotId ?? undefined,
         stripeEventId: event.id,
         status: isSuccessful ? PaymentStatus.SUCCEEDED : PaymentStatus.FAILED,
         amount,
         paidAt: isSuccessful ? new Date() : null,
         paymentGatewayData: event.data.object as unknown as Prisma.InputJsonValue,
-        ...(isSuccessful ? { userId: bookingSlot.userId, purpose: PaymentPurpose.TRAINER_BOOKING } : {})
-      },
-      create: {
-        userId: bookingSlot.userId,
-        bookingSlotId,
-        purpose: PaymentPurpose.TRAINER_BOOKING,
-        status: isSuccessful ? PaymentStatus.SUCCEEDED : PaymentStatus.FAILED,
-        amount,
-        provider: PaymentProvider.STRIPE,
-        stripeEventId: event.id,
-        paymentGatewayData: event.data.object as unknown as Prisma.InputJsonValue,
-        paidAt: isSuccessful ? new Date() : null
+        ...(isSuccessful ? { userId: payment.userId, purpose: PaymentPurpose.TRAINER_BOOKING } : {})
       }
     });
 
-    await tx.bookingSlot.update({
-      where: {
-        id: bookingSlotId
-      },
-      data: {
-        paymentStatus: isSuccessful ? PaymentStatus.SUCCEEDED : PaymentStatus.FAILED,
-        transactionId: isSuccessful ? transactionId : null
-      }
-    });
+    if (isSuccessful && bookingSlotId) {
+      await tx.bookingSlot.update({
+        where: {
+          id: bookingSlotId
+        },
+        data: {
+          paymentStatus: PaymentStatus.SUCCEEDED,
+          transactionId,
+        }
+      });
 
-    await tx.slot.update({
-      where: {
-        id: bookingSlot.slotId
-      },
-      data: {
-        isBooked: true
-      }
-    });
+      await tx.slot.update({
+        where: {
+          id: slotIdToBook ?? ""
+        },
+        data: {
+          isBooked: true
+        }
+      });
+    }
 
-    return payment;
+    return updatedPayment;
   });
 
   return {
@@ -211,7 +246,7 @@ export const handlerStripeWebhookEvent = async (event: Stripe.Event) => {
   }
 
   if (!purpose) {
-    if (data.metadata?.bookingSlotId) {
+    if (data.metadata?.bookingSlotId || data.metadata?.paymentId || data.metadata?.trainerId || data.metadata?.slotId) {
       return processTrainerBookingPayment(event, data, isSuccessfulEvent);
     }
 
