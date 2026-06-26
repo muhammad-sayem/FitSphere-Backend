@@ -6,10 +6,10 @@ import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
 import { Prisma } from "../../../generated/prisma/browser";
+import { BookingStatus } from "../../../generated/prisma/enums";
 import { ICreateSlotPayload, IUpdateSlotPayload } from "./slot.interface";
 
 //* Create a new slot for a trainer (by trainer only) *//
-
 const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
   const isTrainer = await prisma.trainerProfile.findUnique({
     where: {
@@ -373,6 +373,65 @@ const updateSlot = async (user: IRequestUser, slotId: string, payload: IUpdateSl
   }
 }
 
+//* Update booking (slot) status to complete *//
+// Given a slotId, find the booking whose slotId matches and mark that booking as COMPLETED.
+// Only the trainer who owns the slot can mark the booking as completed.
+const updateSlotStatusToCompleted = async (user: IRequestUser, slotId: string) => {
+  const isTrainer = await prisma.trainerProfile.findUnique({
+    where: {
+      userId: user?.userId
+    }
+  });
+
+  if (!isTrainer) {
+    throw new AppError(status.FORBIDDEN, "Only trainers can update slot status");
+  }
+
+  const isSlotExists = await prisma.slot.findFirst({
+    where: {
+      id: slotId,
+      trainerId: isTrainer.id
+    }
+  });
+
+  if (!isSlotExists) {
+    throw new AppError(status.NOT_FOUND, "Slot not found or you are trying to update other trainer's slot");
+  }
+
+  const isBookingExists = await prisma.bookingSlot.findFirst({
+    where: {
+      slotId
+    }
+  });
+
+  if (!isBookingExists) {
+    throw new AppError(status.NOT_FOUND, "No booking found for this slot");
+  }
+
+  if (isBookingExists.trainerId !== isTrainer.id) {
+    throw new AppError(status.FORBIDDEN, "You can only update bookings for your own slots");
+  }
+
+  try {
+    const result = await prisma.bookingSlot.update({
+      where: {
+        id: isBookingExists.id
+      },
+      data: {
+        status: BookingStatus.COMPLETED
+      }
+    });
+
+    return result;
+  }
+
+  catch (error) {
+    console.log("Error updating slot status: ", error);
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to update slot status");
+  }
+}
+
+
 //* Delete slot by trainer (own) *//
 const deleteSlot = async (user: IRequestUser, slotId: string) => {
   const isTrainer = await prisma.trainerProfile.findUnique({
@@ -418,5 +477,6 @@ export const SlotService = {
   getSlotById,
   getSlotsByTrainerId,
   updateSlot,
+  updateSlotStatusToCompleted,
   deleteSlot
 }

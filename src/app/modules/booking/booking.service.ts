@@ -323,7 +323,7 @@ const getBookingsByTrainerId = async (trainerId: string) => {
 };
 
 //* Update booking status to "CONFIRM" (By trainer only) *//
-const updateBookingStatusToConfirm = async (user: IRequestUser, bookingId: string) => {
+const updateBookingStatusToCompleted = async (user: IRequestUser, bookingId: string) => {
   const isTrainerExists = await prisma.trainerProfile.findUnique({
     where: {
       userId: user.userId
@@ -424,6 +424,6 @@ export const BookingService = {
   getAllBookings,
   getBookingsByUserId,
   getBookingsByTrainerId,
-  updateBookingStatusToConfirm,
+  updateBookingStatusToCompleted,
   deleteBooking
 };

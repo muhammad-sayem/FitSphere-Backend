@@ -15,7 +15,7 @@ router.get("/user/my-bookings", checkAuth(UserRoles.USER), BookingController.get
 
 router.get("/trainer/:trainerId/bookings", BookingController.getBookingsByTrainerId);
 
-router.patch("/update-booking/:bookingId", checkAuth(UserRoles.TRAINER), BookingController.updateBookingStatusToConfirm);
+router.patch("/update-booking/:bookingId", checkAuth(UserRoles.TRAINER), BookingController.updateBookingStatusToCompleted);
 
 router.delete("/delete-booking/:bookingId", checkAuth(UserRoles.USER), BookingController.deleteBooking);
 

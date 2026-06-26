@@ -73,12 +73,12 @@ const getBookingsByTrainerId = catchAsync(
 );
 
 //* Update booking status to confirm (By trainer only) *//
-const updateBookingStatusToConfirm = catchAsync(
+const updateBookingStatusToCompleted = catchAsync(
   async (req: Request, res: Response) => {
     const trainer = req.user;
     const bookingId = req.params.bookingId;
 
-    const result = await BookingService.updateBookingStatusToConfirm(trainer, bookingId as string);
+    const result = await BookingService.updateBookingStatusToCompleted(trainer, bookingId as string);
     sendResponse(res, {
       httpStatusCode: status.OK,
       success: true,
@@ -110,6 +110,6 @@ export const BookingController = {
   getAllBookings,
   getBookingsByUserId,
   getBookingsByTrainerId,
-  updateBookingStatusToConfirm,
+  updateBookingStatusToCompleted,
   deleteBooking
 };

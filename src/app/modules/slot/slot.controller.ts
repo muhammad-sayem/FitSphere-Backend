@@ -65,7 +65,6 @@ const getSlotsByTrainerId = catchAsync(
   }
 );
 
-
 //* Update slot by trainer (own) *//
 const updateSlot = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
@@ -80,6 +79,22 @@ const updateSlot = catchAsync(async (req: Request, res: Response) => {
     data: result
   })
 });
+
+//* Update SLot (booking) status to completed *//
+const updateSlotStatusToCompleted = catchAsync(
+  async(req: Request, res: Response) => {
+    const user = req.user;
+    const { slotId } = req.params;
+
+    const result = await SlotService.updateSlotStatusToCompleted(user, slotId as string);
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message: "Slot status updated to completed successfully",
+      data: result
+    })
+  }
+)
 
 //* Delete slot by trainer (own) *//
 const deleteSlot = catchAsync(async (req: Request, res: Response) => {
@@ -102,5 +117,6 @@ export const SlotController = {
   getSlotById,
   getSlotsByTrainerId,
   updateSlot,
+  updateSlotStatusToCompleted,
   deleteSlot
 }
