@@ -8,11 +8,15 @@ import { Prisma } from "../../../generated/prisma/browser";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
 import { stripe } from "../../config/stripe.config";
 import { envVars } from "../../config/env";
-import { v7 as uuidv7 } from "uuid";
 
 const paymentRedirectBaseUrl = process.env.FRONTEND_URL ?? envVars.BETTER_AUTH_URL;
 
 //* Create order (By user and trainer) *//
+// Follows the same pattern as trainer booking:
+// 1. Validate product + stock availability
+// 2. Create a PENDING Payment (no Order row yet)
+// 3. Create Stripe checkout session with metadata that the webhook will use
+// 4. The Order row is created later, in the payment webhook, once payment succeeds
 const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => {
   const isProductExists = await prisma.product.findFirst({
     where: {
@@ -42,22 +46,9 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const transactionId = String(uuidv7());
-
-      const order = await tx.order.create({
-        data: {
-          userId: user.userId,
-          price,
-          totalAmount,
-          transactionId,
-          ...payload,
-        }
-      });
-
       const paymentData = await tx.payment.create({
         data: {
           userId: user.userId,
-          orderId: order.id,
           purpose: PaymentPurpose.PRODUCT_ORDER,
           provider: PaymentProvider.STRIPE,
           status: PaymentStatus.PENDING,
@@ -82,14 +73,24 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
         ],
         payment_intent_data: {
           metadata: {
-            orderId: order.id,
             paymentId: paymentData.id,
+            userId: user.userId,
+            productId: payload.productId,
+            quantity: String(payload.quantity),
+            address: payload.address,
+            phone: payload.phone,
+            totalAmount: String(totalAmount),
             purpose: PaymentPurpose.PRODUCT_ORDER,
           }
         },
         metadata: {
-          orderId: order.id,
           paymentId: paymentData.id,
+          userId: user.userId,
+          productId: payload.productId,
+          quantity: String(payload.quantity),
+          address: payload.address,
+          phone: payload.phone,
+          totalAmount: String(totalAmount),
           purpose: PaymentPurpose.PRODUCT_ORDER,
         },
         success_url: `${paymentRedirectBaseUrl}/payment/payment-success`,
@@ -100,19 +101,7 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
         throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create payment session");
       }
 
-      await tx.product.update({
-        where: {
-          id: payload.productId
-        },
-        data: {
-          remainingStock: {
-            decrement: payload.quantity
-          }
-        }
-      });
-
       return {
-        order,
         paymentData,
         paymentUrl: session.url,
       };
@@ -122,9 +111,18 @@ const createOrder = async (user: IRequestUser, payload: ICreateOrderPayload) => 
   }
 
   catch (error) {
-    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create order", (error as Error).stack);
-  }
+    console.log("Error creating order: ", error);
 
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    if (error instanceof Error) {
+      throw new AppError(status.INTERNAL_SERVER_ERROR, error.message);
+    }
+
+    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create order");
+  }
 }
 
 //* Get own orders (By user only) *//

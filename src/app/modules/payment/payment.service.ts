@@ -157,62 +157,106 @@ const processTrainerBookingPayment = async (event: Stripe.Event, data: TStripeDa
 };
 
 const processProductOrderPayment = async (event: Stripe.Event, data: TStripeDataObject, isSuccessful: boolean) => {
-  const orderId = data.metadata?.orderId;
+  const paymentId = data.metadata?.paymentId;
+  const userId = data.metadata?.userId;
+  const productId = data.metadata?.productId;
+  const quantity = data.metadata?.quantity ? Number(data.metadata.quantity) : undefined;
+  const address = data.metadata?.address;
+  const phone = data.metadata?.phone;
+  const totalAmountMeta = data.metadata?.totalAmount ? Number(data.metadata.totalAmount) : undefined;
 
-  if (!orderId) {
-    throw new AppError(status.BAD_REQUEST, "orderId is required for product order payment");
+  if (!paymentId) {
+    throw new AppError(status.BAD_REQUEST, "paymentId is required for product order payment");
   }
 
-  const order = await prisma.order.findUnique({
+  if (isSuccessful && (!userId || !productId || !quantity || !address || !phone || !totalAmountMeta)) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      "userId, productId, quantity, address, phone and totalAmount are required for product order payment"
+    );
+  }
+
+  const payment = await prisma.payment.findUnique({
     where: {
-      id: orderId
+      id: paymentId
     }
   });
 
-  if (!order) {
-    throw new AppError(status.NOT_FOUND, "Order not found");
+  if (!payment) {
+    throw new AppError(status.NOT_FOUND, "Payment not found");
   }
 
   const transactionId = getTransactionId(data.payment_intent, data.id);
   const amount = getAmount(data);
 
   const result = await prisma.$transaction(async (tx) => {
-    const payment = await tx.payment.upsert({
+    let orderId = payment.orderId;
+    let orderUserId = payment.userId;
+
+    if (isSuccessful && !orderId) {
+      const product = await tx.product.findUnique({
+        where: {
+          id: productId as string
+        },
+        select: {
+          price: true,
+          remainingStock: true,
+        }
+      });
+
+      if (!product) {
+        throw new AppError(status.NOT_FOUND, "Product not found");
+      }
+
+      if (product.remainingStock < (quantity as number)) {
+        throw new AppError(status.BAD_REQUEST, "Insufficient stock available");
+      }
+
+      const createdOrder = await tx.order.create({
+        data: {
+          userId: userId as string,
+          productId: productId as string,
+          price: product.price,
+          quantity: quantity as number,
+          totalAmount: totalAmountMeta as number,
+          address: address as string,
+          phone: phone as string,
+          status: OrderStatus.PAID,
+          transactionId,
+        }
+      });
+
+      orderId = createdOrder.id;
+      orderUserId = createdOrder.userId;
+
+      await tx.product.update({
+        where: {
+          id: productId as string
+        },
+        data: {
+          remainingStock: {
+            decrement: quantity as number
+          }
+        }
+      });
+    }
+
+    const updatedPayment = await tx.payment.update({
       where: {
-        orderId
+        id: payment.id,
       },
-      update: {
+      data: {
+        orderId: orderId ?? null,
         stripeEventId: event.id,
         status: isSuccessful ? PaymentStatus.SUCCEEDED : PaymentStatus.FAILED,
         amount,
         paidAt: isSuccessful ? new Date() : null,
         paymentGatewayData: event.data.object as unknown as Prisma.InputJsonValue,
-        ...(isSuccessful ? { userId: order.userId, purpose: PaymentPurpose.PRODUCT_ORDER } : {})
-      },
-      create: {
-        userId: order.userId,
-        orderId,
-        purpose: PaymentPurpose.PRODUCT_ORDER,
-        status: isSuccessful ? PaymentStatus.SUCCEEDED : PaymentStatus.FAILED,
-        amount,
-        provider: PaymentProvider.STRIPE,
-        stripeEventId: event.id,
-        paymentGatewayData: event.data.object as unknown as Prisma.InputJsonValue,
-        paidAt: isSuccessful ? new Date() : null
+        ...(isSuccessful ? { userId: orderUserId, purpose: PaymentPurpose.PRODUCT_ORDER } : {})
       }
     });
 
-    await tx.order.update({
-      where: {
-        id: orderId
-      },
-      data: {
-        status: isSuccessful ? OrderStatus.PAID : OrderStatus.CANCELLED,
-        transactionId: isSuccessful ? transactionId : null
-      }
-    });
-
-    return payment;
+    return updatedPayment;
   });
 
   return {
@@ -246,11 +290,11 @@ export const handlerStripeWebhookEvent = async (event: Stripe.Event) => {
   }
 
   if (!purpose) {
-    if (data.metadata?.bookingSlotId || data.metadata?.paymentId || data.metadata?.trainerId || data.metadata?.slotId) {
+    if (data.metadata?.bookingSlotId || data.metadata?.trainerId || data.metadata?.slotId) {
       return processTrainerBookingPayment(event, data, isSuccessfulEvent);
     }
 
-    if (data.metadata?.orderId) {
+    if (data.metadata?.paymentId || data.metadata?.productId) {
       return processProductOrderPayment(event, data, isSuccessfulEvent);
     }
 
@@ -307,6 +351,7 @@ const getPaymentByUserId = async ( user: IRequestUser, query: QueryParams)=> {
 
   const baseConditions: Prisma.PaymentWhereInput = {
     userId: user.userId,
+    status: PaymentStatus.SUCCEEDED,
   };
 
   const andConditions: Prisma.PaymentWhereInput[] = [baseConditions];
