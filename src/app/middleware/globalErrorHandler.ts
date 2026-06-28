@@ -6,7 +6,7 @@ import { envVars } from "../config/env";
 import AppError from "../errorHelpers/AppError";
 import { TErrorResponse, TErrorSources } from "../interfaces/error.interface";
 import { handleZodError } from "../errorHelpers/handleZodError";
-import { deleteFileFromCloudinary } from "../config/cloudinary.config";
+// import { deleteFileFromCloudinary } from "../config/cloudinary.config";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const globalErrorHandler = async (err: any, req: Request, res: Response, next: NextFunction) => {
@@ -14,14 +14,14 @@ export const globalErrorHandler = async (err: any, req: Request, res: Response, 
     console.log("Error from Global Error Handler", err);
   }
 
-  if (req.file) {
-    await deleteFileFromCloudinary(req.file.path);
-  }
+  // if (req.file) {
+  //   await deleteFileFromCloudinary(req.file.path);
+  // }
 
-  if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-    const imageUrls = req.files?.map((file) => file.path);
-    await Promise.all(imageUrls.map((url) => deleteFileFromCloudinary(url)));
-  }
+  // if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+  //   const imageUrls = req.files?.map((file) => file.path);
+  //   await Promise.all(imageUrls.map((url) => deleteFileFromCloudinary(url)));
+  // }
 
   let errorSources: TErrorSources[] = []
   let statusCode: number = status.INTERNAL_SERVER_ERROR;

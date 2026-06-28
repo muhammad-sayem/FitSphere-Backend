@@ -1,13 +1,13 @@
 import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
-import { envVars } from "./env";
+// import { envVars } from "./env";
 import AppError from "../errorHelpers/AppError";
 import status from "http-status";
 
-cloudinary.config({
-  cloud_name: envVars.CLOUDINARY.CLOUDINARY_CLOUD_NAME,
-  api_key: envVars.CLOUDINARY.CLOUDINARY_API_KEY,
-  api_secret: envVars.CLOUDINARY.CLOUDINARY_API_SECRET
-});
+// cloudinary.config({
+//   cloud_name: envVars.CLOUDINARY.CLOUDINARY_CLOUD_NAME,
+//   api_key: envVars.CLOUDINARY.CLOUDINARY_API_KEY,
+//   api_secret: envVars.CLOUDINARY.CLOUDINARY_API_SECRET
+// });
 
 export const uploadFileToCloudinary = async (
   buffer: Buffer,

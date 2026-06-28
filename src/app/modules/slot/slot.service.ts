@@ -10,6 +10,71 @@ import { BookingStatus } from "../../../generated/prisma/enums";
 import { ICreateSlotPayload, IUpdateSlotPayload } from "./slot.interface";
 
 //* Create a new slot for a trainer (by trainer only) *//
+// const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
+//   const isTrainer = await prisma.trainerProfile.findUnique({
+//     where: {
+//       userId: user.userId
+//     }
+//   });
+
+//   if (!isTrainer) {
+//     throw new Error("Only trainers can create slots");
+//   }
+
+//   try {
+//     const { date, startTime, endTime } = payload;
+
+//     const formattedStartTime = startTime.trim();
+//     const formattedEndTime = endTime.trim();
+
+//     if (formattedStartTime > formattedEndTime) {
+//       throw new AppError(status.BAD_REQUEST, "Start time must be before end time");
+//     }
+
+//     const startOfDay = new Date(date);
+//     startOfDay.setUTCHours(0, 0, 0, 0);
+
+//     const endOfDay = new Date(date);
+//     endOfDay.setUTCHours(23, 59, 59, 999);
+
+//     const isSlotAlreadyCreated = await prisma.slot.findFirst({
+//       where: {
+//         date: {
+//           gte: startOfDay,
+//           lte: endOfDay
+//         },
+//         startTime: formattedStartTime,
+//         endTime: formattedEndTime,
+//         trainer: {
+//           userId: user.userId
+//         }
+//       }
+//     });
+
+//     if (isSlotAlreadyCreated) {
+//       throw new AppError(status.CONFLICT, "Slot with the same date and time already exists");
+//     }
+
+//     const result = await prisma.slot.create({
+//       data: {
+//         trainerId: isTrainer.id,
+//         date: new Date(date),
+//         startTime: formattedStartTime,
+//         endTime: formattedEndTime
+//       }
+//     });
+//     return result;
+//   }
+
+//   catch (error: any) {
+//     if (error instanceof AppError) {
+//       throw error;
+//     }
+//     console.log("Error creating slot: ", error);
+//     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create slot");
+//   }
+// }
+
 const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
   const isTrainer = await prisma.trainerProfile.findUnique({
     where: {
@@ -31,10 +96,10 @@ const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
       throw new AppError(status.BAD_REQUEST, "Start time must be before end time");
     }
 
-    const startOfDay = new Date(date);
+    const startOfDay = new Date(`${date}T00:00:00.000Z`);
     startOfDay.setUTCHours(0, 0, 0, 0);
 
-    const endOfDay = new Date(date);
+    const endOfDay = new Date(`${date}T00:00:00.000Z`);
     endOfDay.setUTCHours(23, 59, 59, 999);
 
     const isSlotAlreadyCreated = await prisma.slot.findFirst({
@@ -58,7 +123,7 @@ const createSlot = async (user: IRequestUser, payload: ICreateSlotPayload) => {
     const result = await prisma.slot.create({
       data: {
         trainerId: isTrainer.id,
-        date: new Date(date),
+        date: new Date(`${date}T12:00:00.000Z`),
         startTime: formattedStartTime,
         endTime: formattedEndTime
       }

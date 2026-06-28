@@ -7,13 +7,10 @@ import { sendResponse } from "../../shared/sendResponse";
 //* Create a new product *//
 const createProduct = catchAsync(
   async (req: Request, res: Response) => {
-    const payload = {
-      ...req.body,
-      image: req.file?.path
-    };
+    const payload = req.body;
 
     const result = await ProductService.createProduct(payload);
-    
+
     sendResponse(res, {
       httpStatusCode: 201,
       success: true,
@@ -62,7 +59,7 @@ const updateProduct = catchAsync(
     const user = req.user;
     const payload = {
       ...req.body,
-      image: req.file?.path
+      image: req.body.image
     };
 
     const result = await ProductService.updateProduct(user, productId as string, payload);

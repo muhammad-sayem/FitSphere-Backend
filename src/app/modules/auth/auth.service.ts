@@ -9,6 +9,62 @@ import { tokenUtils } from "../../utils/token";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 
 //* Register a new user *//
+// const registerUser = async (payload: IRegisterUserPayload) => {
+//   const { name, image, email, password, role } = payload;
+
+//   const data = await auth.api.signUpEmail({
+//     body: {
+//       name,
+//       image,
+//       email,
+//       password,
+//       role
+//     }
+//   });
+
+//   if (!data.user) {
+//     throw new AppError(status.BAD_REQUEST, "Failed to register user");
+//   }
+
+//   try {
+//     const user = await prisma.user.findUnique({
+//       where: {
+//         id: data.user.id
+//       }
+//     });
+
+//     const access_token = tokenUtils.getAccessToken({
+//       userId: data.user.id,
+//       name: data.user.name,
+//       email: data.user.email,
+//       role: data.user.role,
+//       status: data.user.status,
+//       isDeleted: data.user.isDeleted
+//     });
+
+//     const refresh_token = tokenUtils.getRefreshToken({
+//       userId: data.user.id,
+//       name: data.user.name,
+//       email: data.user.email,
+//       role: data.user.role,
+//       status: data.user.status,
+//       isDeleted: data.user.isDeleted
+//     });
+
+//     return {
+//       ...data,
+//       access_token,
+//       refresh_token,
+//       user
+//     }
+//   }
+
+//   catch (error: any) {
+//     throw new AppError(status.INTERNAL_SERVER_ERROR, "Error creating user in database:", error.message);
+//   }
+
+// }
+
 const registerUser = async (payload: IRegisterUserPayload) => {
   const { name, image, email, password, role } = payload;
 
@@ -58,11 +114,9 @@ const registerUser = async (payload: IRegisterUserPayload) => {
       user
     }
   }
-
   catch (error: any) {
     throw new AppError(status.INTERNAL_SERVER_ERROR, "Error creating user in database:", error.message);
   }
-
 }
 
 //* Login user *//

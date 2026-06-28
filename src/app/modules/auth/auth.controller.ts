@@ -7,17 +7,35 @@ import { tokenUtils } from "../../utils/token";
 import { cookieUtils } from "../../utils/cookie";
 
 //* Register a new user *//
+// const registerUser = catchAsync(
+//   async (req: Request, res: Response) => {
+//     const payload = req.body;
+//     const result = await AuthService.registerUser(payload);
+
+//     //* Setting tokens in the cookie *//
+//     const { access_token, refresh_token, token, ...rest } = result;
+//     tokenUtils.setAccessTokenCookie(res, access_token);
+//     tokenUtils.setRefreshTokenCookie(res, refresh_token);
+//     tokenUtils.setBetterAuthSessionTokenCookie(res, token as string);
+
+//     sendResponse(res, {
+//       httpStatusCode: status.CREATED,
+//       success: true,
+//       message: "User registered successfully",
+//       data: {
+//         access_token,
+//         refresh_token,
+//         token,
+//         ...rest
+//       },
+//     });
+//   }
+// );
 const registerUser = catchAsync(
   async (req: Request, res: Response) => {
-    const rawData = req.body.data;
-    const parsedData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
-    const payload = {
-      ...parsedData,
-      image: req.file?.path
-    };
+    const payload = req.body;
     const result = await AuthService.registerUser(payload);
 
-    //* Setting tokens in the cookie *//
     const { access_token, refresh_token, token, ...rest } = result;
     tokenUtils.setAccessTokenCookie(res, access_token);
     tokenUtils.setRefreshTokenCookie(res, refresh_token);
