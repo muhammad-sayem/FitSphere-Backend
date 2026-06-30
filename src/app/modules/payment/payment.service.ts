@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import status from "http-status";
 import AppError from "../../errorHelpers/AppError";
 import { prisma } from "../../lib/prisma";
-import { PaymentPurpose, PaymentProvider, PaymentStatus, OrderStatus } from "../../../generated/prisma/enums";
+import { PaymentPurpose, PaymentStatus, OrderStatus } from "../../../generated/prisma/enums";
 import { Prisma } from "../../../generated/prisma/browser";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
@@ -268,25 +268,38 @@ const processProductOrderPayment = async (event: Stripe.Event, data: TStripeData
 };
 
 export const handlerStripeWebhookEvent = async (event: Stripe.Event) => {
-  const existingPayment = await prisma.payment.findFirst({
+  const existingPaymentByEvent = await prisma.payment.findFirst({
     where: {
       stripeEventId: event.id
     }
   });
 
-  if (existingPayment) {
+  if (existingPaymentByEvent) {
     console.log(`Event ${event.id} already processed. Skipping`);
     return { message: `Event ${event.id} already processed. Skipping` };
   }
 
   const data = event.data.object as TStripeDataObject;
   const purpose = getPurpose(data.metadata);
-  const isSuccessfulEvent = event.type === "checkout.session.completed" || event.type === "payment_intent.succeeded";
+  
+  const isSuccessfulEvent = event.type === "checkout.session.completed";
   const isFailedEvent = event.type === "checkout.session.expired" || event.type === "payment_intent.payment_failed";
 
   if (!isSuccessfulEvent && !isFailedEvent) {
-    console.log(`Unhandled event type ${event.type}`);
-    return { message: `Unhandled event type ${event.type}` };
+    console.log(`Unhandled or ignored event type ${event.type}`);
+    return { message: `Unhandled or ignored event type ${event.type}` };
+  }
+
+  const paymentId = data.metadata?.paymentId;
+  if (paymentId) {
+    const paymentCheck = await prisma.payment.findUnique({
+      where: { id: paymentId }
+    });
+
+    if (paymentCheck && paymentCheck.status === PaymentStatus.SUCCEEDED && isSuccessfulEvent) {
+      console.log(`Payment ${paymentId} is already SUCCEEDED. Skipping duplicate process.`);
+      return { message: "Payment already processed" };
+    }
   }
 
   if (!purpose) {
@@ -309,8 +322,7 @@ export const handlerStripeWebhookEvent = async (event: Stripe.Event) => {
   return processProductOrderPayment(event, data, isSuccessfulEvent);
 };
 
-//* Get Payment by user ID (Logged in user) *//
-const getPaymentByUserId = async ( user: IRequestUser, query: QueryParams)=> {
+const getPaymentByUserId = async (user: IRequestUser, query: QueryParams) => {
   if (!user || !user.userId) {
     return {
       meta: {
@@ -424,4 +436,4 @@ const getPaymentByUserId = async ( user: IRequestUser, query: QueryParams)=> {
 
 export const PaymentService = {
   getPaymentByUserId
-}
+};
