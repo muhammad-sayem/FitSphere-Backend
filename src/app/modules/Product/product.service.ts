@@ -73,36 +73,22 @@ const getProductById = async (productId: string) => {
 }
 
 //* Update a product by product ID (Admin Only)*//
-const updateProduct = async (user: IRequestUser, productId: string, payload: IUpdateProductPayload) => {
-  const isUserExists = await prisma.user.findUnique({
-    where: {
-      id: user.userId
-    }
-  });
-
-  if (!isUserExists) {
-    throw new AppError(status.NOT_FOUND, "User not found");
-  }
-
-  const isAdmin = isUserExists.role === UserRoles.ADMIN;
-
-  if (!isAdmin) {
-    throw new AppError(status.FORBIDDEN, "Only admins can update products");
-  }
-
+const updateProduct = async (productId: string, payload: IUpdateProductPayload) => {
   try {
     const result = await prisma.product.update({
       where: {
-        id: productId
+        id: productId,
       },
-      data: payload
+      data: payload,
     });
     return result;
-  }
-
-  catch (error) {
+  } catch (error) {
     console.log("Error updating product: ", error);
-    throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to update product", (error as Error).stack);
+    throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      "Failed to update product",
+      (error as Error).stack
+    );
   }
 };
 

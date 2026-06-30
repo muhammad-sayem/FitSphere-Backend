@@ -56,19 +56,15 @@ const getProductById = catchAsync(
 const updateProduct = catchAsync(
   async (req: Request, res: Response) => {
     const { productId } = req.params;
-    const user = req.user;
-    const payload = {
-      ...req.body,
-      image: req.body.image
-    };
+    const payload = req.body; // Expecting raw JSON payload directly
 
-    const result = await ProductService.updateProduct(user, productId as string, payload);
+    const result = await ProductService.updateProduct(productId as string, payload);
 
     sendResponse(res, {
       httpStatusCode: 200,
-      success: true, 
-      message: "Product updated successfully", 
-      data: result
+      success: true,
+      message: "Product updated successfully",
+      data: result,
     });
   }
 );

@@ -20,6 +20,6 @@ export const updateProductZodSchema = z.object({
     price: z.coerce.number().positive("Price must be a positive number").optional(),
     category: z.string().min(1, "Product category is required").optional(),
     remainingStock: z.coerce.number().int().nonnegative("Remaining stock must be a non-negative integer").optional(),
-    image: z.string().optional(),
+    image: z.string().url("Invalid image URL format").optional(),
   })
 });
