@@ -82,7 +82,9 @@ const updateProduct = async (productId: string, payload: IUpdateProductPayload) 
       data: payload,
     });
     return result;
-  } catch (error) {
+  } 
+  
+  catch (error) {
     console.log("Error updating product: ", error);
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,

@@ -56,7 +56,7 @@ const getProductById = catchAsync(
 const updateProduct = catchAsync(
   async (req: Request, res: Response) => {
     const { productId } = req.params;
-    const payload = req.body; // Expecting raw JSON payload directly
+    const payload = req.body; 
 
     const result = await ProductService.updateProduct(productId as string, payload);
 
