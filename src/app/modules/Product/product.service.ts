@@ -3,8 +3,8 @@ import { Prisma, UserRoles } from "../../../generated/prisma/browser";
 import AppError from "../../errorHelpers/AppError";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
-import { ICreateProductPayload, IUpdateProductPayload } from "./product.interface";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
+import { ICreateProductPayload, IUpdateProductPayload } from "./product.interface";
 
 //* Create a new product *//
 const createProduct = async (payload: ICreateProductPayload) => {
@@ -15,7 +15,7 @@ const createProduct = async (payload: ICreateProductPayload) => {
 
     return result;
   }
-  
+
   catch (error) {
     console.log("Error creating product: ", error);
     throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to create product", (error as Error).stack);
@@ -62,7 +62,7 @@ const getAllProducts = async (query: QueryParams) => {
   };
 }
 
-//* Get a product by prpoduct ID *// 
+//* Get a product by prpoduct ID *//
 const getProductById = async (productId: string) => {
   const result = await prisma.product.findUnique({
     where: {
@@ -82,8 +82,8 @@ const updateProduct = async (productId: string, payload: IUpdateProductPayload) 
       data: payload,
     });
     return result;
-  } 
-  
+  }
+
   catch (error) {
     console.log("Error updating product: ", error);
     throw new AppError(

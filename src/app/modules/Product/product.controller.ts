@@ -28,7 +28,7 @@ const getAllProducts = catchAsync(
 
     sendResponse(res, {
       httpStatusCode: 200,
-      success: true, 
+      success: true,
       message: "Products retrieved successfully",
       data: result.data,
       meta: result.meta
@@ -45,7 +45,7 @@ const getProductById = catchAsync(
 
     sendResponse(res, {
       httpStatusCode: 200,
-      success: true, 
+      success: true,
       message: "Product retrieved successfully",
       data: result
     });
@@ -56,7 +56,7 @@ const getProductById = catchAsync(
 const updateProduct = catchAsync(
   async (req: Request, res: Response) => {
     const { productId } = req.params;
-    const payload = req.body; 
+    const payload = req.body;
 
     const result = await ProductService.updateProduct(productId as string, payload);
 

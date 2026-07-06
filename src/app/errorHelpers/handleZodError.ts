@@ -7,7 +7,7 @@ export const handleZodError = (err: z.ZodError): TErrorResponse => {
   const message = "Zod Validation Error";
   const errorSources: TErrorSources[] = [];
 
-  err.issues.forEach(issue => {
+  err.issues.forEach((issue: any) => {
     errorSources.push({
       path: issue.path.join(" => "),
       message: issue.message

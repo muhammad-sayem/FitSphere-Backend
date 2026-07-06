@@ -4,7 +4,7 @@ import { IRequestUser } from "../../interfaces/requestUser.interface"
 import { prisma } from "../../lib/prisma"
 import { ICreateTrainerProfile, IUpdateTrainerProfile } from "./trainerProfile.interface"
 import AppError from "../../errorHelpers/AppError";
-import { Prisma, UserRoles } from "../../../generated/prisma/browser";
+import { Prisma, UserRoles, UserStatus } from "../../../generated/prisma/browser";
 import { QueryBuilder, QueryParams } from "../../utils/QueryBuilder";
 
 //* Create a trainer profile (By Trainer role) *//
@@ -129,7 +129,7 @@ const getAllTrainerProfilesApprovedOnly = async (query: QueryParams) => {
     { ...filterConditions },
     {
       user: {
-        status: "ACTIVE"
+        status: UserStatus.ACTIVE
       }
     },
     {
@@ -268,7 +268,7 @@ const getTrainerProfileByUserId = async (userId: string) => {
   return trainerProfile;
 }
 
-//* Get a trainer profile by trainer profile ID *// 
+//* Get a trainer profile by trainer profile ID *//
 const getTrainerByTrainerProfileId = async (trainerProfileId: string) => {
   const result = await prisma.trainerProfile.findFirst({
     where: {

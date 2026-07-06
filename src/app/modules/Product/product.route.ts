@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { ProductController } from "./product.controller";
 import { checkAuth } from "../../middleware/checkAuth";
 import { UserRoles } from "../../../generated/prisma/enums";
 import { validateRequest } from "../../middleware/validateRequest";
 import { createProductZodSchema, updateProductZodSchema } from "./product.validation";
+import { ProductController } from "./product.controller";
 
 const router = Router();
 
