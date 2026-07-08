@@ -1,4 +1,4 @@
-# 🏋️ Fit Sphere
+# 💪🏼 Fit Sphere
 
 ## Project Description
 
