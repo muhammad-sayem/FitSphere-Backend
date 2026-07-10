@@ -169,11 +169,61 @@ const loginUser = async (payload: ILoginUserPayload) => {
 const logoutUser = async (session_token: string) => {
   const result = await auth.api.signOut({
     headers: new Headers({
-      Authorization: `Bearer ${session_token}`
+      "Cookie": `better-auth.session_token=${session_token}`
     })
   });
 
   return result;
+}
+
+//* Change Password *//
+const changePassword = async (currentPassword: string, newPassword: string, session_token: string) => {
+  const session = await auth.api.getSession({
+    headers: new Headers({
+      Authorization: `Bearer ${session_token}`
+    })
+  });
+
+  if (!session) {
+    throw new AppError(status.UNAUTHORIZED, "Invalid session token")
+  }
+
+  const result = await auth.api.changePassword({
+    body: {
+      currentPassword,
+      newPassword,
+      revokeOtherSessions: true
+    },
+    headers: {
+      Authorization: `Bearer ${session_token}`
+    }
+  });
+
+  const access_token = tokenUtils.getAccessToken({
+    userId: session.user.id,
+    name: session.user.name,
+    role: session.user.role,
+    email: session.user.email,
+    status: session.user.status,
+    isDeleted: session.user.status,
+    emailVerified: session.user.emailVerified
+  });
+
+  const refresh_token = tokenUtils.getRefreshToken({
+    userId: session.user.id,
+    name: session.user.name,
+    role: session.user.role,
+    email: session.user.email,
+    status: session.user.status,
+    isDeleted: session.user.status,
+    emailVerified: session.user.emailVerified
+  });
+
+  return {
+    ...result,
+    access_token,
+    refresh_token
+  };
 }
 
 //* Get me *//
@@ -381,5 +431,6 @@ export const AuthService = {
   registerUser,
   loginUser,
   logoutUser,
+  changePassword,
   getMe
 };

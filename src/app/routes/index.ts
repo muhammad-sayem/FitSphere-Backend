@@ -9,6 +9,7 @@ import { OrderRoute } from "../modules/order/order.route";
 import { UserRoute } from "../modules/user/user.route";
 import { PaymentRoute } from "../modules/payment/payment.route";
 import { StatsRoute } from "../modules/stats/stats.route";
+import { MyProfileRoute } from "../modules/myProfile/myProfile.route";
 
 
 const router = Router();
@@ -23,5 +24,6 @@ router.use('/orders', OrderRoute);
 router.use('/users', UserRoute);
 router.use('/payments', PaymentRoute);
 router.use('/stats', StatsRoute);
+router.use('/my-profile', MyProfileRoute);
 
 export const IndexRouters = router;
