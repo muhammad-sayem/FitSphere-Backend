@@ -9,11 +9,11 @@ const editMyProfile = async (user: IRequestUser, payload: IEditMyProfilePayload)
     }
   });
 
-  if(!isUserExists) {
+  if (!isUserExists) {
     throw new Error("User not found");
   }
 
-  const {name, image} = payload;
+  const { name, image } = payload;
 
   await prisma.user.update({
     where: {

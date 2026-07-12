@@ -62,7 +62,6 @@ const getAdminStatsData = async () => {
   }
 }
 
-
 const getTrainerStatsData = async (user: IRequestUser) => {
   const trainerProfile = await prisma.trainerProfile.findUnique({
     where: {
@@ -99,7 +98,6 @@ const getTrainerStatsData = async (user: IRequestUser) => {
     myReceivedReviewCount
   }
 };
-
 
 const getUserStatsData = async (user: IRequestUser) => {
   const userProfile = await prisma.user.findUnique({
@@ -177,9 +175,24 @@ const getBarChartData = async () => {
   return bookingByMonth;
 };
 
+const getCommonStatsData = async() => {
+  const userCount = await prisma.user.count();
+  const trainerCount = await prisma.trainerProfile.count();
+  const productCount = await prisma.product.count();
+  const reviewCount = await prisma.review.count();
+
+  return {
+    userCount,
+    trainerCount,
+    productCount,
+    reviewCount
+  }
+}
+
 
 export const StatsService = {
   getDashboardData,
   getPieChartData,
-  getBarChartData
+  getBarChartData,
+  getCommonStatsData
 }

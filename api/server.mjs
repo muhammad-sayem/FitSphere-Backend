@@ -3,7 +3,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 
 // src/app/routes/index.ts
-import { Router as Router11 } from "express";
+import { Router as Router12 } from "express";
 
 // src/app/modules/product/product.route.ts
 import { Router } from "express";
@@ -935,10 +935,53 @@ var loginUser = async (payload) => {
 var logoutUser = async (session_token) => {
   const result = await auth.api.signOut({
     headers: new Headers({
-      Authorization: `Bearer ${session_token}`
+      "Cookie": `better-auth.session_token=${session_token}`
     })
   });
   return result;
+};
+var changePassword = async (currentPassword, newPassword, session_token) => {
+  const session = await auth.api.getSession({
+    headers: new Headers({
+      Authorization: `Bearer ${session_token}`
+    })
+  });
+  if (!session) {
+    throw new AppError_default(status4.UNAUTHORIZED, "Invalid session token");
+  }
+  const result = await auth.api.changePassword({
+    body: {
+      currentPassword,
+      newPassword,
+      revokeOtherSessions: true
+    },
+    headers: {
+      Authorization: `Bearer ${session_token}`
+    }
+  });
+  const access_token = tokenUtils.getAccessToken({
+    userId: session.user.id,
+    name: session.user.name,
+    role: session.user.role,
+    email: session.user.email,
+    status: session.user.status,
+    isDeleted: session.user.status,
+    emailVerified: session.user.emailVerified
+  });
+  const refresh_token = tokenUtils.getRefreshToken({
+    userId: session.user.id,
+    name: session.user.name,
+    role: session.user.role,
+    email: session.user.email,
+    status: session.user.status,
+    isDeleted: session.user.status,
+    emailVerified: session.user.emailVerified
+  });
+  return {
+    ...result,
+    access_token,
+    refresh_token
+  };
 };
 var getMe = async (user) => {
   if (!user?.userId) {
@@ -1133,6 +1176,7 @@ var AuthService = {
   registerUser,
   loginUser,
   logoutUser,
+  changePassword,
   getMe
 };
 
@@ -1207,6 +1251,21 @@ var logoutUser2 = catchAsync(
     });
   }
 );
+var changePassword2 = catchAsync(
+  async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const session_token = req.cookies["better-auth.session_token"];
+    console.log("Session Token for change password: ", session_token);
+    const result = await AuthService.changePassword(currentPassword, newPassword, session_token);
+    console.log("Result After change password: ", result);
+    sendResponse(res, {
+      httpStatusCode: status5.OK,
+      success: true,
+      message: "Password changed successfully",
+      data: result
+    });
+  }
+);
 var getMe2 = catchAsync(
   async (req, res) => {
     const user = req.user;
@@ -1223,6 +1282,7 @@ var AuthControllers = {
   registerUser: registerUser2,
   loginUser: loginUser2,
   logoutUser: logoutUser2,
+  changePassword: changePassword2,
   getMe: getMe2
 };
 
@@ -1231,6 +1291,7 @@ var router2 = Router2();
 router2.post("/register", AuthControllers.registerUser);
 router2.post("/login", AuthControllers.loginUser);
 router2.post("/logout", AuthControllers.logoutUser);
+router2.post("/change-password", checkAuth(UserRoles.USER, UserRoles.TRAINER, UserRoles.ADMIN), AuthControllers.changePassword);
 router2.get("/me", checkAuth(UserRoles.USER, UserRoles.TRAINER, UserRoles.ADMIN), AuthControllers.getMe);
 var AuthRoutes = router2;
 
@@ -1378,7 +1439,7 @@ var getAllTrainerProfilesApprovedOnly = async (query) => {
 var getAllTrainersFromUsers = async (query) => {
   try {
     const searchTerm = query?.searchTerm;
-    const status24 = query?.status;
+    const status25 = query?.status;
     const page = query?.page;
     const limit = query?.limit;
     const sortBy = query?.sortBy;
@@ -1400,9 +1461,9 @@ var getAllTrainersFromUsers = async (query) => {
         }
       });
     }
-    if (status24) {
+    if (status25) {
       andConditions.push({
-        status: status24
+        status: status25
       });
     }
     const whereConditions = { AND: andConditions };
@@ -4261,8 +4322,8 @@ var getPieChartData = async () => {
       id: true
     }
   });
-  return bookingStatusDistribution.map(({ _count, status: status24 }) => ({
-    status: status24,
+  return bookingStatusDistribution.map(({ _count, status: status25 }) => ({
+    status: status25,
     count: _count.id
   }));
 };
@@ -4276,10 +4337,23 @@ var getBarChartData = async () => {
   `;
   return bookingByMonth;
 };
+var getCommonStatsData = async () => {
+  const userCount = await prisma.user.count();
+  const trainerCount = await prisma.trainerProfile.count();
+  const productCount = await prisma.product.count();
+  const reviewCount = await prisma.review.count();
+  return {
+    userCount,
+    trainerCount,
+    productCount,
+    reviewCount
+  };
+};
 var StatsService = {
   getDashboardData,
   getPieChartData,
-  getBarChartData
+  getBarChartData,
+  getCommonStatsData
 };
 
 // src/app/modules/stats/stats.controller.ts
@@ -4295,46 +4369,124 @@ var getDashboardData2 = catchAsync(
     });
   }
 );
+var getCommonStatsData2 = catchAsync(
+  async (req, res) => {
+    const result = await StatsService.getCommonStatsData();
+    sendResponse(res, {
+      httpStatusCode: 200,
+      success: true,
+      message: "Dashboard data retrieved successfully",
+      data: result
+    });
+  }
+);
 var StatsController = {
-  getDashboardData: getDashboardData2
+  getDashboardData: getDashboardData2,
+  getCommonStatsData: getCommonStatsData2
 };
 
 // src/app/modules/stats/stats.route.ts
 var router10 = Router10();
 router10.get("/", checkAuth(UserRoles.USER, UserRoles.TRAINER, UserRoles.ADMIN), StatsController.getDashboardData);
+router10.get("/common-stats", StatsController.getCommonStatsData);
 var StatsRoute = router10;
 
-// src/app/routes/index.ts
+// src/app/modules/myProfile/myProfile.route.ts
+import { Router as Router11 } from "express";
+
+// src/app/modules/myProfile/myProfile.service.ts
+var editMyProfile = async (user, payload) => {
+  const isUserExists = await prisma.user.findUnique({
+    where: {
+      id: user.userId
+    }
+  });
+  if (!isUserExists) {
+    throw new Error("User not found");
+  }
+  const { name, image } = payload;
+  await prisma.user.update({
+    where: {
+      id: user.userId
+    },
+    data: {
+      name,
+      image
+    }
+  });
+};
+var myProfileService = {
+  editMyProfile
+};
+
+// src/app/modules/myProfile/myProfile.controller.ts
+import status21 from "http-status";
+var editMyProfile2 = catchAsync(
+  async (req, res) => {
+    const user = req.user;
+    const payload = req.body;
+    const result = await myProfileService.editMyProfile(user, payload);
+    sendResponse(res, {
+      httpStatusCode: status21.OK,
+      success: true,
+      message: "Profile updated successfully",
+      data: result
+    });
+  }
+);
+var myProfileController = {
+  editMyProfile: editMyProfile2
+};
+
+// src/app/modules/myProfile/myProfile.validation.ts
+import z7 from "zod";
+var EditMyProfileZodSchema = z7.object({
+  body: z7.object({
+    name: z7.string().optional(),
+    image: z7.string().optional(),
+    roleData: z7.object({
+      bio: z7.string().optional()
+    }).optional()
+  })
+});
+
+// src/app/modules/myProfile/myProfile.route.ts
 var router11 = Router11();
-router11.use("/products", ProductRouters);
-router11.use("/auth", AuthRoutes);
-router11.use("/trainer-profiles", TrainerProfileRoute);
-router11.use("/slots", SlotRoute);
-router11.use("/reviews", TrainerReviewRoute);
-router11.use("/bookings", BookingRoute);
-router11.use("/orders", OrderRoute);
-router11.use("/users", UserRoute);
-router11.use("/payments", PaymentRoute);
-router11.use("/stats", StatsRoute);
-var IndexRouters = router11;
+router11.patch("/edit-my-profile", validateRequest(EditMyProfileZodSchema), checkAuth(UserRoles.USER, UserRoles.TRAINER, UserRoles.ADMIN), myProfileController.editMyProfile);
+var MyProfileRoute = router11;
+
+// src/app/routes/index.ts
+var router12 = Router12();
+router12.use("/products", ProductRouters);
+router12.use("/auth", AuthRoutes);
+router12.use("/trainer-profiles", TrainerProfileRoute);
+router12.use("/slots", SlotRoute);
+router12.use("/reviews", TrainerReviewRoute);
+router12.use("/bookings", BookingRoute);
+router12.use("/orders", OrderRoute);
+router12.use("/users", UserRoute);
+router12.use("/payments", PaymentRoute);
+router12.use("/stats", StatsRoute);
+router12.use("/my-profile", MyProfileRoute);
+var IndexRouters = router12;
 
 // src/app/middleware/notFound.ts
-import status21 from "http-status";
+import status22 from "http-status";
 var notFound = (req, res) => {
-  res.status(status21.NOT_FOUND).json({
+  res.status(status22.NOT_FOUND).json({
     success: false,
     message: `Route ${req.originalUrl} Not Found`
   });
 };
 
 // src/app/middleware/globalErrorHandler.ts
-import status23 from "http-status";
-import z7 from "zod";
+import status24 from "http-status";
+import z8 from "zod";
 
 // src/app/errorHelpers/handleZodError.ts
-import status22 from "http-status";
+import status23 from "http-status";
 var handleZodError = (err) => {
-  const statusCode = status22.BAD_REQUEST;
+  const statusCode = status23.BAD_REQUEST;
   const message = "Zod Validation Error";
   const errorSources = [];
   err.issues.forEach((issue) => {
@@ -4357,10 +4509,10 @@ var globalErrorHandler = async (err, req, res, next) => {
     console.log("Error from Global Error Handler", err);
   }
   let errorSources = [];
-  let statusCode = status23.INTERNAL_SERVER_ERROR;
+  let statusCode = status24.INTERNAL_SERVER_ERROR;
   let message = "Internal Server Error";
   let stack = void 0;
-  if (err instanceof z7.ZodError) {
+  if (err instanceof z8.ZodError) {
     const simplifiedError = handleZodError(err);
     statusCode = simplifiedError.statusCode;
     message = simplifiedError.message;
@@ -4377,7 +4529,7 @@ var globalErrorHandler = async (err, req, res, next) => {
       }
     ];
   } else if (err instanceof Error) {
-    statusCode = status23.INTERNAL_SERVER_ERROR;
+    statusCode = status24.INTERNAL_SERVER_ERROR;
     message = err.message;
     stack = err.stack;
     errorSources = [

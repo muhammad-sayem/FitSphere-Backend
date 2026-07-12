@@ -7,4 +7,6 @@ const router = Router();
 
 router.get("/", checkAuth(UserRoles.USER, UserRoles.TRAINER, UserRoles.ADMIN), StatsController.getDashboardData);
 
+router.get("/common-stats", StatsController.getCommonStatsData);
+
 export const StatsRoute = router;

@@ -18,6 +18,20 @@ const getDashboardData = catchAsync(
   }
 );
 
+const getCommonStatsData = catchAsync(
+  async(req: Request, res: Response) => {
+    const result = await StatsService.getCommonStatsData();
+
+    sendResponse(res, {
+      httpStatusCode: 200,
+      success: true,
+      message: "Dashboard data retrieved successfully",
+      data: result
+    })
+  }
+)
+
 export const StatsController = {
-  getDashboardData
+  getDashboardData,
+  getCommonStatsData
 };
